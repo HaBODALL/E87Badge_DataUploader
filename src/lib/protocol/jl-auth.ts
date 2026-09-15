@@ -30,9 +30,7 @@ function initTables() {
 
 export function generateChallenge(): Uint8Array {
   const chal = new Uint8Array(16)
-  for (let i = 0; i < 16; i++) {
-    chal[i] = Math.floor(Math.random() * 256)
-  }
+  crypto.getRandomValues(chal)
   return chal
 }
 

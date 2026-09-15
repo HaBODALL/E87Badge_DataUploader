@@ -18,6 +18,9 @@
   let startX = 0
   let startY = 0
 
+  let initialPinchDistance = 0
+  let initialPinchScale = 1
+
   const dispatch = createEventDispatcher()
 
   $: if (imageUrl) {
@@ -61,24 +64,82 @@
     ctx.stroke()
   }
 
+  let activePointers: Map<number, PointerEvent> = new Map()
+
+  function getDistance(p1: PointerEvent, p2: PointerEvent) {
+    return Math.hypot(p1.clientX - p2.clientX, p1.clientY - p2.clientY)
+  }
+
   function handlePointerDown(e: PointerEvent) {
-    isDragging = true
-    startX = e.clientX - offsetX
-    startY = e.clientY - offsetY
+    activePointers.set(e.pointerId, e)
+
+    if (activePointers.size === 1) {
+      isDragging = true
+      startX = e.clientX - offsetX
+      startY = e.clientY - offsetY
+    } else if (activePointers.size === 2) {
+      isDragging = false // stop drag to pinch
+      const [p1, p2] = Array.from(activePointers.values())
+      initialPinchDistance = getDistance(p1, p2)
+      initialPinchScale = scale
+    }
+
     canvas.setPointerCapture(e.pointerId)
   }
 
   function handlePointerMove(e: PointerEvent) {
-    if (!isDragging) return
-    offsetX = e.clientX - startX
-    offsetY = e.clientY - startY
-    draw()
+    if (activePointers.has(e.pointerId)) {
+      activePointers.set(e.pointerId, e)
+    }
+
+    if (activePointers.size === 1 && isDragging) {
+      offsetX = e.clientX - startX
+      offsetY = e.clientY - startY
+      draw()
+    } else if (activePointers.size === 2) {
+      const [p1, p2] = Array.from(activePointers.values())
+      const currentDistance = getDistance(p1, p2)
+      if (initialPinchDistance > 0) {
+        const zoom = currentDistance / initialPinchDistance
+        const newScale = initialPinchScale * zoom
+
+        // Adjust offset to zoom around center (simplified)
+        const center = 184
+        offsetX = center - (center - offsetX) * (newScale / scale)
+        offsetY = center - (center - offsetY) * (newScale / scale)
+        scale = newScale
+        draw()
+      }
+    }
   }
 
   function handlePointerUp(e: PointerEvent) {
-    isDragging = false
+    activePointers.delete(e.pointerId)
+    if (activePointers.size < 2) {
+      initialPinchDistance = 0
+    }
+    if (activePointers.size === 1) {
+      // Re-init drag for remaining finger
+      const [p1] = Array.from(activePointers.values())
+      isDragging = true
+      startX = p1.clientX - offsetX
+      startY = p1.clientY - offsetY
+    } else if (activePointers.size === 0) {
+      isDragging = false
+    }
     canvas.releasePointerCapture(e.pointerId)
   }
+
+  function updateScale(e: Event) {
+    const input = e.target as HTMLInputElement
+    const newScale = parseFloat(input.value)
+    const center = 184
+    offsetX = center - (center - offsetX) * (newScale / scale)
+    offsetY = center - (center - offsetY) * (newScale / scale)
+    scale = newScale
+    draw()
+  }
+
 
   function handleWheel(e: WheelEvent) {
     e.preventDefault()
@@ -125,6 +186,10 @@
     on:pointerup={handlePointerUp}
     on:wheel|preventDefault={handleWheel}
   ></canvas>
+  <div class="controls">
+    <label for="zoom">Zoom</label>
+    <input id="zoom" type="range" min="0.1" max="5" step="0.05" value={scale} on:input={updateScale} />
+  </div>
   <div class="actions">
     <button on:click={confirmCrop}>Confirmer le recadrage</button>
   </div>
@@ -146,6 +211,18 @@
     border-radius: 12px;
     touch-action: none;
     cursor: move;
+  }
+
+  .controls {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    width: 100%;
+  }
+
+  .controls input[type="range"] {
+    flex: 1;
+    accent-color: #00f2ff;
   }
 
   button {

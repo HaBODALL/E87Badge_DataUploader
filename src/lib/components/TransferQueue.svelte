@@ -40,7 +40,12 @@
     {#each items as item (item.id)}
       <li class="item {item.status}">
         <span class="name">{item.name}</span>
-        <span class="status-badge {item.status}">{item.status}</span>
+        <span class="status-badge {item.status}">
+          {item.status}
+          {#if item.estimatedTimeSec && (item.status === 'pending' || item.status === 'uploading')}
+            (~{item.estimatedTimeSec}s)
+          {/if}
+        </span>
         {#if item.status === 'uploading'}
           <div class="progress-bar">
             <div class="fill" style="width: {item.progress}%"></div>

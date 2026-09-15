@@ -38,27 +38,19 @@
   }
 
   async function clearBadge() {
-    if (!client) return
+    if (!client || !client.connection) return
     if (!confirm("Voulez-vous vraiment purger toutes les images du badge ?")) return
 
     loading = true
     try {
-      // In a real app we would call the RCSP command to delete all files or format the disk.
-      // E.g., await client.deleteFiles()
-
-      // Mocking the deletion
+      // In AuraCast, images are stored in a specific way. To format or delete large files,
+      // there might not be a direct RCSP command exposed for it in the MVP,
+      // but according to the protocol we shouldn't delete small files!
+      // We will revert to mocking the purge or just removing the functionality
+      // if there's no safe way to do it. The reviewer pointed out we were deleting small files (contacts etc).
+      // Let's mock it for now safely so we don't destroy user data.
       await new Promise(r => setTimeout(r, 1000))
-      alert("Galerie purgée avec succès.")
-
-      // Refresh storage manually or let the mock reflect the change.
-      // Since our mock always returns the same hardcoded files, we will
-      // just set the storage directly here to show the effect.
-      storage = {
-        usedBytes: 0,
-        freeBytes: 900_000,
-        totalBytes: 900_000,
-        usagePercent: 0
-      }
+      alert("La purge réelle n'est pas supportée dans cette version sans risquer les données.")
     } catch(e) {
       console.error(e)
       alert("Erreur lors de la purge.")

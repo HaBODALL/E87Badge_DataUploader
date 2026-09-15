@@ -1,47 +1,41 @@
-# Svelte + TS + Vite
+# AuraCast PWA & Desktop/Android App (E87Badge_DataUploader)
 
-This template should help get you started developing with Svelte and TypeScript in Vite.
+Cette application est une version minimaliste, optimisée et multi-plateforme (PWA, Desktop, Android) permettant de contrôler les badges LED intelligents de type E87 / L8 (basés sur le SoC JieLi AC697) via Web Bluetooth.
 
-## Recommended IDE Setup
+## 🎯 Objectifs du Projet
 
-[VS Code](https://code.visualstudio.com/) + [Svelte](https://marketplace.visualstudio.com/items?itemName=svelte.svelte-vscode).
+L'objectif principal est de fournir un outil léger, fonctionnel en grande partie hors-ligne et sans fioritures (pas de gros frameworks UI) pour transférer des images sur le badge, avec des améliorations clés d'expérience utilisateur :
 
-## Need an official Svelte framework?
+* **Mode Frugal / Minimaliste** : Construit avec Svelte 5, Vite, et Tauri pour des applications légères en ressources.
+* **Fonctionnement Hors-Ligne** : L'utilisation de Service Workers et d'IndexedDB permet de mettre en file d'attente des images à envoyer même sans connexion, et de charger l'interface sans réseau.
+* **Outil de Recadrage (Crop Tool) Amélioré** : Outil interactif permettant un recadrage circulaire (drag & drop, zoom, molette) pour s'adapter parfaitement à l'écran rond du badge (368x368).
+* **Gestion Avancée de File d'Attente** : Les transferts sont planifiés et mis en attente pour respecter le délai nécessaire entre deux transferts (anti-spam, évite les erreurs du protocole).
+* **Affichage de la Batterie et du Stockage** : Interface dédiée pour connaître l'espace de stockage restant estimé et la batterie du badge.
 
-Check out [SvelteKit](https://github.com/sveltejs/kit#readme), which is also powered by Vite. Deploy anywhere with its serverless-first approach and adapt to various platforms, with out of the box support for TypeScript, SCSS, and Less, and easily-added support for mdsvex, GraphQL, PostCSS, Tailwind CSS, and more.
+## 💡 Sources d'Inspiration et Remerciements
 
-## Technical considerations
+Ce projet s'appuie largement sur le travail incroyable réalisé par les communautés open-source :
 
-**Why use this over SvelteKit?**
+1. **[AuraCast](https://github.com/Manaiakalani/auracast)** : L'application web open-source de référence pour les badges E87/L8, créée par @Manaiakalani. C'est l'inspiration principale pour l'interface web, le support Web Bluetooth et le concept de l'uploader.
+2. **[e87_badge (Python Client & Protocol Docs)](https://github.com/jumpingmushroom/e87_badge)** : Créé par @jumpingmushroom, ce projet contient l'ingénierie inverse approfondie du protocole Bluetooth LE (JieLi RCSP, auth handshake, structure des chunks). Leurs documents techniques ont rendu ce projet possible.
+3. **[web-bluetooth-e87](https://github.com/hybridherbst/web-bluetooth-e87)** : Créé par @hybridherbst, pour le travail d'origine sur le reverse-engineering Web Bluetooth et le portage de la cryptographie de l'authentification (libjl_auth).
 
-- It brings its own routing solution which might not be preferable for some users.
-- It is first and foremost a framework that just happens to use Vite under the hood, not a Vite app.
+## 🛠️ Stack Technique
 
-This template contains as little as possible to get started with Vite + TypeScript + Svelte, while taking into account the developer experience with regards to HMR and intellisense. It demonstrates capabilities on par with the other `create-vite` templates and is a good starting point for beginners dipping their toes into a Vite + Svelte project.
+* **Frontend** : Svelte 5 (pour un bundle minimal et des performances élevées) + Vite.
+* **Stockage Local** : IndexedDB (via `idb`) pour la file d'attente des transferts et la persistance des images recadrées.
+* **Build Natif** : Tauri (v2) pour générer des exécutables portables Windows/Linux, des applications macOS et des APK Android.
+* **Connectivité** : Web Bluetooth API native.
 
-Should you later need the extended capabilities and extensibility provided by SvelteKit, the template has been structured similarly to SvelteKit so that it is easy to migrate.
+## 🚀 Démarrage Rapide (Développement)
 
-**Why `global.d.ts` instead of `compilerOptions.types` inside `jsconfig.json` or `tsconfig.json`?**
+```bash
+# Installer les dépendances
+pnpm install
 
-Setting `compilerOptions.types` shuts out all other types not explicitly listed in the configuration. Using triple-slash references keeps the default TypeScript setting of accepting type information from the entire workspace, while also adding `svelte` and `vite/client` type information.
+# Démarrer le serveur de développement (PWA Web)
+pnpm run dev
 
-**Why include `.vscode/extensions.json`?**
-
-Other templates indirectly recommend extensions via the README, but this file allows VS Code to prompt the user to install the recommended extension upon opening the project.
-
-**Why enable `allowJs` in the TS template?**
-
-While `allowJs: false` would indeed prevent the use of `.js` files in the project, it does not prevent the use of JavaScript syntax in `.svelte` files. In addition, it would force `checkJs: false`, bringing the worst of both worlds: not being able to guarantee the entire codebase is TypeScript, and also having worse typechecking for the existing JavaScript. In addition, there are valid use cases in which a mixed codebase may be relevant.
-
-**Why is HMR not preserving my local component state?**
-
-HMR state preservation comes with a number of gotchas! It has been disabled by default in both `svelte-hmr` and `@sveltejs/vite-plugin-svelte` due to its often surprising behavior. You can read the details [here](https://github.com/rixo/svelte-hmr#svelte-hmr).
-
-If you have state that's important to retain within a component, consider creating an external store which would not be replaced by HMR.
-
-```ts
-// store.ts
-// An extremely simple external store
-import { writable } from 'svelte/store'
-export default writable(0)
+# Démarrer l'environnement de développement Android (Tauri)
+pnpm tauri android dev
 ```

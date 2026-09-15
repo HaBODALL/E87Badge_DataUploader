@@ -12,6 +12,7 @@
   let isConnected = false
 
   let selectedImageUrl: string = ''
+  let isDraggingOver = false
 
   let checkInterval: number;
 
@@ -54,7 +55,19 @@
     }
   }
 
+  function handleDragOver(event: DragEvent) {
+    event.preventDefault()
+    isDraggingOver = true
+  }
+
+  function handleDragLeave(event: DragEvent) {
+    event.preventDefault()
+    isDraggingOver = false
+  }
+
   function handleDrop(event: DragEvent) {
+    event.preventDefault()
+    isDraggingOver = false
     if (event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files.length > 0) {
       handleFile(event.dataTransfer.files[0])
     }
@@ -110,11 +123,14 @@
         <div class="upload-card">
           <h3>Envoyer une image</h3>
           {#if !selectedImageUrl}
-            <div class="file-drop" role="button" tabindex="0"
-              on:dragover|preventDefault
-              on:dragenter|preventDefault
-              on:drop|preventDefault={handleDrop}>
-              <input type="file" accept="image/*" on:change={handleFileSelect} />
+            <div class="file-drop {isDraggingOver ? 'drag-over' : ''}"
+              role="region"
+              aria-label="Zone de dépôt de fichier"
+              on:dragenter={handleDragOver}
+              on:dragover={handleDragOver}
+              on:dragleave={handleDragLeave}
+              on:drop={handleDrop}>
+              <input type="file" accept="image/*" aria-label="Sélectionner une image" on:change={handleFileSelect} />
               <p>Glissez-déposez ou cliquez pour sélectionner une image</p>
             </div>
           {:else}
@@ -187,6 +203,18 @@
     text-align: center;
     position: relative;
     margin-top: 16px;
+    transition: all 0.2s ease-in-out;
+  }
+
+  .file-drop:hover, .file-drop:focus-within {
+    border-color: #00f2ff;
+    background: rgba(0, 242, 255, 0.05);
+  }
+
+  .file-drop.drag-over {
+    border-color: #00f2ff;
+    background: rgba(0, 242, 255, 0.1);
+    transform: scale(1.02);
   }
 
   .file-drop input {
@@ -211,6 +239,17 @@
     padding: 12px 24px;
     border-radius: 16px;
     font-size: 1rem;
+    transition: all 0.2s ease-in-out;
+  }
+
+  .primary-btn:hover {
+    background: #4dffff;
+    transform: translateY(-1px);
+  }
+
+  .primary-btn:focus-visible {
+    outline: 2px solid #00f2ff;
+    outline-offset: 2px;
   }
 
   .secondary-btn {
@@ -220,6 +259,17 @@
     padding: 12px 24px;
     border-radius: 16px;
     font-size: 1rem;
+    transition: all 0.2s ease-in-out;
+  }
+
+  .secondary-btn:hover {
+    background: #256166;
+    transform: translateY(-1px);
+  }
+
+  .secondary-btn:focus-visible {
+    outline: 2px solid #00f2ff;
+    outline-offset: 2px;
   }
 
   .text-btn {
@@ -229,5 +279,15 @@
     padding: 8px;
     margin-top: 8px;
     width: 100%;
+    transition: color 0.2s ease-in-out;
+  }
+
+  .text-btn:hover, .text-btn:focus-visible {
+    color: #e4e1e9;
+    outline: none;
+  }
+
+  .text-btn:focus-visible {
+    text-decoration: underline;
   }
 </style>

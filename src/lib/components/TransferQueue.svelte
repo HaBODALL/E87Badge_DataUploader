@@ -83,6 +83,17 @@
     padding: 4px 12px;
     cursor: pointer;
     font-size: 0.9rem;
+    transition: all 0.2s ease-in-out;
+  }
+
+  button:hover {
+    background: #256166;
+    transform: translateY(-1px);
+  }
+
+  button:focus-visible {
+    outline: 2px solid #00f2ff;
+    outline-offset: 2px;
   }
 
   .item-list {
@@ -117,7 +128,7 @@
   .status-badge.pending { background: #303036; color: #e4e1e9; }
   .status-badge.uploading { background: #004f54; color: #00f2ff; }
   .status-badge.done { background: #00e676; color: #000; }
-  .status-badge.failed { background: #ff5252; color: #fff; }
+  .status-badge.failed { background: #690005; color: #ffb4ab; }
 
   .progress-bar {
     height: 4px;

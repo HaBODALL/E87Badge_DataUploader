@@ -125,11 +125,30 @@
     border-radius: 12px;
     padding: 4px 12px;
     cursor: pointer;
+    transition: all 0.2s ease-in-out;
+  }
+
+  button:not(:disabled):hover {
+    background: #256166;
+    transform: translateY(-1px);
+  }
+
+  button:not(:disabled):focus-visible {
+    outline: 2px solid #00f2ff;
+    outline-offset: 2px;
   }
 
   button.danger {
     background: #690005;
     color: #ffb4ab;
+  }
+
+  button.danger:not(:disabled):hover {
+    background: #93000a;
+  }
+
+  button.danger:not(:disabled):focus-visible {
+    outline: 2px solid #ffb4ab;
   }
 
   button:disabled {

@@ -233,5 +233,16 @@
     border-radius: 16px;
     font-weight: bold;
     cursor: pointer;
+    transition: all 0.2s ease-in-out;
+  }
+
+  button:hover {
+    background: #4dffff;
+    transform: translateY(-1px);
+  }
+
+  button:focus-visible {
+    outline: 2px solid #00f2ff;
+    outline-offset: 2px;
   }
 </style>

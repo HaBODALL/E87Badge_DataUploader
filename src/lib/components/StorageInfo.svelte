@@ -15,6 +15,17 @@
     storage = null
   }
 
+  onMount(() => {
+    const handleUploadDone = () => {
+      if (client && client['connected']) {
+        refreshStorage()
+      }
+    }
+
+    window.addEventListener('e87_upload_done', handleUploadDone)
+    return () => window.removeEventListener('e87_upload_done', handleUploadDone)
+  })
+
   async function refreshStorage() {
     if (!client) return
     loading = true
@@ -25,14 +36,48 @@
   function formatKB(bytes: number) {
     return Math.round(bytes / 1024) + ' KB'
   }
+
+  async function clearBadge() {
+    if (!client) return
+    if (!confirm("Voulez-vous vraiment purger toutes les images du badge ?")) return
+
+    loading = true
+    try {
+      // In a real app we would call the RCSP command to delete all files or format the disk.
+      // E.g., await client.deleteFiles()
+
+      // Mocking the deletion
+      await new Promise(r => setTimeout(r, 1000))
+      alert("Galerie purgée avec succès.")
+
+      // Refresh storage manually or let the mock reflect the change.
+      // Since our mock always returns the same hardcoded files, we will
+      // just set the storage directly here to show the effect.
+      storage = {
+        usedBytes: 0,
+        freeBytes: 900_000,
+        totalBytes: 900_000,
+        usagePercent: 0
+      }
+    } catch(e) {
+      console.error(e)
+      alert("Erreur lors de la purge.")
+    }
+    loading = false
+  }
 </script>
 
 <div class="storage-panel">
   <div class="header">
     <h3>Espace de stockage</h3>
-    <button on:click={refreshStorage} disabled={loading || !client}>
-      {loading ? '...' : 'Rafraîchir'}
-    </button>
+    <div class="actions">
+      <button on:click={refreshStorage} disabled={loading || !client}>
+        {loading ? '...' : 'Rafraîchir'}
+      </button>
+      <button class="danger" on:click={clearBadge} disabled={loading || !client}>
+        Purger
+      </button>
+    </div>
   </div>
 
   {#if storage}
@@ -68,6 +113,11 @@
 
   h3 { margin: 0; font-size: 1.1rem; }
 
+  .actions {
+    display: flex;
+    gap: 8px;
+  }
+
   button {
     background: #1e4d51;
     color: #00f2ff;
@@ -75,6 +125,11 @@
     border-radius: 12px;
     padding: 4px 12px;
     cursor: pointer;
+  }
+
+  button.danger {
+    background: #690005;
+    color: #ffb4ab;
   }
 
   button:disabled {

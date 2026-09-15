@@ -13,9 +13,19 @@
 
   let selectedImageUrl: string = ''
 
+  let checkInterval: number;
+
   onMount(() => {
     client = new E87Client()
     transferQueue.setClient(client)
+
+    checkInterval = window.setInterval(() => {
+      if (client) {
+        isConnected = client['connected'];
+      }
+    }, 2000);
+
+    return () => clearInterval(checkInterval);
   })
 
   async function connect() {
@@ -40,8 +50,21 @@
   function handleFileSelect(event: Event) {
     const input = event.target as HTMLInputElement
     if (input.files && input.files[0]) {
-      const file = input.files[0]
+      handleFile(input.files[0])
+    }
+  }
+
+  function handleDrop(event: DragEvent) {
+    if (event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files.length > 0) {
+      handleFile(event.dataTransfer.files[0])
+    }
+  }
+
+  function handleFile(file: File) {
+    if (file.type.startsWith('image/')) {
       selectedImageUrl = URL.createObjectURL(file)
+    } else {
+      alert("Veuillez déposer une image.")
     }
   }
 
@@ -87,9 +110,12 @@
         <div class="upload-card">
           <h3>Envoyer une image</h3>
           {#if !selectedImageUrl}
-            <div class="file-drop">
+            <div class="file-drop" role="button" tabindex="0"
+              on:dragover|preventDefault
+              on:dragenter|preventDefault
+              on:drop|preventDefault={handleDrop}>
               <input type="file" accept="image/*" on:change={handleFileSelect} />
-              <p>Sélectionnez une image à recadrer</p>
+              <p>Glissez-déposez ou cliquez pour sélectionner une image</p>
             </div>
           {:else}
             <CircularCropTool imageUrl={selectedImageUrl} on:crop={handleCrop} />

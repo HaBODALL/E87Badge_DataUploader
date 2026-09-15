@@ -6,6 +6,7 @@ const DB_VERSION = 1
 const STORE_NAME = 'queue'
 
 export interface QueueItem {
+  estimatedTimeSec?: number
   id: string
   name: string
   data: Uint8Array // Image raw data

@@ -39,7 +39,7 @@ function createQueueStore() {
     })
 
     try {
-      if (!client) {
+      if (!client || !client["connected"]) {
         throw new Error("Client not connected")
       }
 
@@ -55,6 +55,11 @@ function createQueueStore() {
 
       pendingItem.status = 'done'
       pendingItem.progress = 100
+
+      // Dispatch an event so components can refresh storage
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('e87_upload_done'));
+      }
     } catch (e) {
       console.error("Upload failed", e)
       pendingItem.retries++
@@ -84,6 +89,7 @@ function createQueueStore() {
         status: 'pending',
         progress: 0,
         retries: 0,
+        estimatedTimeSec: Math.ceil(data.length / (490 * 8)) * 1.5, // very rough estimation
         addedAt: Date.now()
       }
       await addQueueItem(item)

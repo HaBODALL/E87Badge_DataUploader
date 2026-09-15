@@ -67,7 +67,7 @@ export class E87Client {
   }
 
   async sendImage(imageBytes: Uint8Array, onProgress: (pct: number) => void) {
-    if (!this.connected) throw new Error("Not connected")
+    if (!this.connected) { throw new Error("Not connected") }
 
     // Phase 1: Reset auth flag
     await this.sendFEFrame(0xC0, 0x06, new Uint8Array([0x02, 0x00, 0x01]))

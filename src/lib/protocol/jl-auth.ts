@@ -28,7 +28,7 @@ function initTables() {
   tablesInitialized = true
 }
 
-export function generateChallenge(): Uint8Array {
+export function getRandomAuthData(): Uint8Array {
   const chal = new Uint8Array(16)
   crypto.getRandomValues(chal)
   return chal

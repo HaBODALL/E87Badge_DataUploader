@@ -1,12 +1,6 @@
 name: Test Build (Portable Desktop Only)
 
 on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
   workflow_dispatch:
 
 permissions:
@@ -48,82 +42,3 @@ jobs:
           name: AuraCast-Windows-Exe
           path: |
             src-tauri/target/release/auracast.exe
-
-  build-linux:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10.30.3
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          cache: 'pnpm'
-
-      - name: Install dependencies (Linux)
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
-
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Install frontend dependencies
-        run: pnpm install --no-frozen-lockfile
-
-      - name: Build Vite frontend
-        run: pnpm run build
-
-      - name: Build Tauri Desktop Executable
-        run: pnpm tauri build --no-bundle
-
-      - name: Upload Linux Executable Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: AuraCast-Linux-Executable
-          path: |
-            src-tauri/target/release/auracast
-
-  build-macos:
-    runs-on: macos-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10.30.3
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          cache: 'pnpm'
-
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: aarch64-apple-darwin, x86_64-apple-darwin
-
-      - name: Install frontend dependencies
-        run: pnpm install --no-frozen-lockfile
-
-      - name: Build Vite frontend
-        run: pnpm run build
-
-      - name: Build Tauri Desktop Executable
-        run: pnpm tauri build --target universal-apple-darwin --no-bundle
-
-      - name: Upload macOS Executable Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: AuraCast-macOS-Universal
-          path: |
-            src-tauri/target/universal-apple-darwin/release/auracast

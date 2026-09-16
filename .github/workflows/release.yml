@@ -1,4 +1,4 @@
-name: Build Desktop & Mobile Apps (Tauri 2)
+name: Release Desktop & Mobile Apps (Tauri 2)
 
 on:
   push:

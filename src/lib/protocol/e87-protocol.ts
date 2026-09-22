@@ -2017,6 +2017,7 @@ export class E87Client {
       conn: this.connection,
       payload: imageBytes,
       uploadMode: 'image',
+      deviceLanguage: 'en',
       interChunkDelayMs: 0,
       cancelRequested: () => false,
       onProgress: (bytesSent, totalBytes, chunksSent, totalChunks) => {

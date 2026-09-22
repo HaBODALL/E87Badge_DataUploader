@@ -46,4 +46,4 @@ jobs:
         with:
           name: AuraCast-Windows-Exe
           path: |
-            src-tauri/target/release/auracast.exe
+            src-tauri/target/release/app.exe

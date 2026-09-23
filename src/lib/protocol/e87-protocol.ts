@@ -6,7 +6,8 @@
  */
 
 import { getRandomAuthData, getEncryptedAuthData } from './jl-auth'
-import { sleep, toHex, hexToBytes, crc16xmodem, formatBytes } from './utils'
+import { sleep, toHex, hexToBytes, formatBytes } from './utils'
+import { crc16xmodem } from './crc'
 
 // ─── Constants ───
 

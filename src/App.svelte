@@ -110,7 +110,7 @@
   <div class="content">
     <div class="connection-card">
       {#if !isConnected}
-        <h2>Connectez votre badge AuraCast</h2>
+        <h2>Connectez votre badge E87Badge_DataUploader</h2>
         <p>Utilisez Web Bluetooth pour vous connecter.</p>
         <button class="primary-btn" on:click={connect}>Connecter</button>
       {:else}

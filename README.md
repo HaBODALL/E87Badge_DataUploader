@@ -1,4 +1,4 @@
-# AuraCast PWA & Desktop/Android App (E87Badge_DataUploader)
+# E87Badge_DataUploader
 
 Cette application est une version minimaliste, optimisée et multi-plateforme (PWA, Desktop, Android) permettant de contrôler les badges LED intelligents de type E87 / L8 (basés sur le SoC JieLi AC697) via Web Bluetooth.
 

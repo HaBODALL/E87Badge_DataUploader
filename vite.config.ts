@@ -4,6 +4,7 @@ import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vite.dev/config/
 export default defineConfig({
+  base: './',
   plugins: [
     svelte(),
     VitePWA({
@@ -15,8 +16,8 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,ico,png,svg,json,ts}']
       },
       manifest: {
-        name: 'AuraCast',
-        short_name: 'AuraCast',
+        name: 'E87Badge_DataUploader',
+        short_name: 'E87Badge_DataUploader',
         description: 'Web Bluetooth companion for E87 / L8 smart badges',
         theme_color: '#0a0b1e',
         background_color: '#0a0b1e',

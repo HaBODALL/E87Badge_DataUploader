@@ -47,7 +47,7 @@
 </script>
 
 <header class="app-bar">
-  <div class="brand">AuraCast PWA</div>
+  <div class="brand">E87Badge_DataUploader</div>
 
   <div class="actions">
     {#if isConnected}

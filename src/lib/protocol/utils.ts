@@ -4,16 +4,6 @@ export function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-export function formatDuration(seconds: number): string {
-  if (seconds < 1) return '<1s'
-  if (seconds < 60) return `${Math.round(seconds)}s`
-  const m = Math.floor(seconds / 60)
-  const s = Math.round(seconds % 60)
-  if (m < 60) return `${m}m ${s}s`
-  const h = Math.floor(m / 60)
-  return `${h}h ${m % 60}m`
-}
-
 export function formatBytes(b: number): string {
   if (b < 1024) return `${b} B`
   if (b < 1024 * 1024) return `${(b / 1024).toFixed(1)} KB`

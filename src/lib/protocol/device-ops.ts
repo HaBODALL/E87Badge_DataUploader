@@ -315,10 +315,10 @@ export function createDeviceOps(cb: DeviceOpsCallbacks): DeviceOps {
 import { E87Client } from './e87-protocol';
 
 
-export async function getStorageInfoE87(client: E87Client) {
+export async function getStorageInfoE87(client: E87Client, log: (msg: string) => void = () => {}) {
   if (!client || !client.connection) return null;
   try {
-    const files = await browseFilesE87(client.connection, console.log);
+    const files = await browseFilesE87(client.connection, log);
     const usedBytes = files.reduce((sum, f) => sum + f.sizeBytes, 0);
     const totalBytes = 900_000;
     return {

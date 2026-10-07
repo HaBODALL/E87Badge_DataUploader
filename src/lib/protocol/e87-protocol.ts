@@ -1531,7 +1531,9 @@ function buildFilePathResponse(deviceSeq: number, uploadMode: UploadMode): Uint8
 }
 
 function randomTempName(): string {
-  const n = Math.floor(Math.random() * 0xffffff).toString(16).padStart(6, '0')
+  const bytes = new Uint8Array(3)
+  crypto.getRandomValues(bytes)
+  const n = (bytes[0] << 16 | bytes[1] << 8 | bytes[2]).toString(16).padStart(6, '0')
   return `${n}.tmp`
 }
 
@@ -1735,8 +1737,10 @@ export async function writeFileE87(opts: UploadOptions): Promise<void> {
     metaBody[4] = fileSize & 0xff
     metaBody[5] = (fileCrc >> 8) & 0xff
     metaBody[6] = fileCrc & 0xff
-    metaBody[7] = Math.random() * 256 | 0
-    metaBody[8] = Math.random() * 256 | 0
+    const randomBytes = new Uint8Array(2)
+    crypto.getRandomValues(randomBytes)
+    metaBody[7] = randomBytes[0]
+    metaBody[8] = randomBytes[1]
     metaBody.set(nameBytes, 9)
     metaBody[metaBody.length - 1] = 0x00
 
@@ -1987,17 +1991,23 @@ export async function setBrightnessE87(
 // Wrapper for compatibility with existing components
 export class E87Client {
   public connection: E87Connection | null = null;
+  public log: (msg: string) => void;
+
+  constructor(logger?: (msg: string) => void) {
+    this.log = logger || (() => {});
+  }
+
   public get connected() {
     return this.connection?.server?.connected || false;
   }
 
   async connect() {
-    this.connection = await connectE87(console.log);
+    this.connection = await connectE87(this.log);
   }
 
   async disconnect() {
     if (this.connection) {
-      await disconnectE87(this.connection, console.log);
+      await disconnectE87(this.connection, this.log);
       this.connection = null;
     }
   }
@@ -2007,7 +2017,7 @@ export class E87Client {
     if (!this.connection) return 0;
     try {
       // Actually e87-protocol has refreshBatteryE87
-      return (await refreshBatteryE87(this.connection, console.log)).level || 0;
+      return (await refreshBatteryE87(this.connection, this.log)).level || 0;
 
     } catch(e) { return 0; }
   }
@@ -2024,7 +2034,7 @@ export class E87Client {
       onProgress: (bytesSent, totalBytes, chunksSent, totalChunks) => {
         onProgress((bytesSent / totalBytes) * 100);
       },
-      log: console.log
+      log: this.log
     });
   }
 }

@@ -9,10 +9,6 @@ const KEY = new Uint8Array([
 ])
 const MAGIC = new Uint8Array([0x11, 0x22, 0x33, 0x33, 0x22, 0x11])
 
-const SBOX = new Uint8Array(256)
-const ISBOX = new Uint8Array(256)
-const KS_TABLE = new Uint8Array(256)
-
 let tablesInitialized = false
 
 function initTables() {

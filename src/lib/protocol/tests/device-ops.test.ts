@@ -1,8 +1,8 @@
 import { describe, it, expect, vi } from 'vitest'
-import { getStorageInfoE87 } from '../device-ops'
+import { createDeviceOps, getStorageInfoE87 } from '../device-ops'
 import { E87Client } from '../e87-protocol'
 
-// We need to mock e87-protocol because device-ops imports browseFilesE87 directly
+// We need to mock e87-protocol because device-ops imports protocol functions
 vi.mock('../e87-protocol', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../e87-protocol')>()
   return {
@@ -13,11 +13,71 @@ vi.mock('../e87-protocol', async (importOriginal) => {
         { sizeBytes: 100000 },
         { sizeBytes: 200000 }
       ]);
-    })
+    }),
+    refreshBatteryE87: vi.fn().mockResolvedValue({ level: 85, updatedAt: '12:00:00', charging: false }),
+    getBrightnessE87: vi.fn().mockResolvedValue(50),
+    setBrightnessE87: vi.fn().mockResolvedValue(undefined),
   }
 })
 
 describe('device-ops', () => {
+  describe('createDeviceOps', () => {
+    function createMockCallbacks(connection: any = null) {
+      return {
+        log: vi.fn(),
+        setStatus: vi.fn(),
+        setBusy: vi.fn(),
+        setBattery: vi.fn(),
+        setBrightnessLevel: vi.fn(),
+        setSmallFiles: vi.fn(),
+        setSelectedSmallFileKey: vi.fn(),
+        setSmallFileReadText: vi.fn(),
+        setBrowseEntries: vi.fn(),
+        setRcspInfoText: vi.fn(),
+        applyScreenInfo: vi.fn(),
+        getConnection: vi.fn().mockReturnValue(connection),
+        getSelectedSmallFile: vi.fn().mockReturnValue(null),
+        getSmallFiles: vi.fn().mockReturnValue([]),
+      }
+    }
+
+    it('sets status to "Not connected." when disconnected', async () => {
+      const cb = createMockCallbacks(null)
+      const ops = createDeviceOps(cb)
+
+      await ops.refreshBattery()
+
+      expect(cb.setStatus).toHaveBeenCalledWith('Not connected.')
+      expect(cb.setBattery).not.toHaveBeenCalled()
+    })
+
+    it('executes operation successfully when connected', async () => {
+      const conn = { server: { connected: true } }
+      const cb = createMockCallbacks(conn)
+      const ops = createDeviceOps(cb)
+
+      await ops.refreshBattery()
+
+      expect(cb.setBusy).toHaveBeenNthCalledWith(1, true)
+      expect(cb.setBattery).toHaveBeenCalledWith(85, '12:00:00', false)
+      expect(cb.setBusy).toHaveBeenLastCalledWith(false)
+    })
+
+    it('prevents concurrent operations using isExecuting lock', async () => {
+      const conn = { server: { connected: true } }
+      const cb = createMockCallbacks(conn)
+      const ops = createDeviceOps(cb)
+
+      // Start an operation and don't wait immediately
+      const p1 = ops.refreshBattery()
+      const p2 = ops.refreshBattery()
+
+      await Promise.all([p1, p2])
+
+      expect(cb.log).toHaveBeenCalledWith(expect.stringContaining('already in progress, skipping'))
+    })
+  })
+
   describe('getStorageInfoE87', () => {
     it('returns null if client or connection is missing', async () => {
       expect(await getStorageInfoE87(null as any)).toBeNull()

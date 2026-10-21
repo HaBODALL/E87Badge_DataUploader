@@ -1,7 +1,27 @@
-import { describe, it, expect } from 'vitest'
-import { formatBytes, hexToBytes, toHex } from '../utils'
+import { describe, it, expect, vi } from 'vitest'
+import { formatBytes, hexToBytes, sleep, toHex } from '../utils'
 
 describe('utils', () => {
+  describe('sleep', () => {
+    it('resolves after the specified duration', async () => {
+      vi.useFakeTimers()
+      let done = false
+      const promise = sleep(1000).then(() => {
+        done = true
+      })
+
+      expect(done).toBe(false)
+      vi.advanceTimersByTime(500)
+      expect(done).toBe(false)
+
+      vi.advanceTimersByTime(500)
+      await promise
+      expect(done).toBe(true)
+
+      vi.useRealTimers()
+    })
+  })
+
   describe('formatBytes', () => {
     it('formats bytes correctly', () => {
       expect(formatBytes(0)).toBe('0 B')

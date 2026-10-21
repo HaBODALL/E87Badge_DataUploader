@@ -1466,19 +1466,6 @@ function parseFileBrowseResponse(payload: Uint8Array, queryType: number, log: (m
 }
 
 /**
- * Stop a file browse session using RCSP StopFileBrowseCmd (opcode 0x0D).
- */
-export async function stopBrowseE87(conn: E87Connection, log: (msg: string) => void): Promise<void> {
-  await ensureE87Auth(conn, log)
-  drainStaleFrames(conn.notificationQueue, log)
-  try {
-    await sendRcspCommandAndWait(conn, 0x0d, Uint8Array.of(0x00), log, 3000)
-  } catch { /* device may have already stopped */ }
-  drainStaleFrames(conn.notificationQueue, log)
-  log('FileBrowse: stopped.')
-}
-
-/**
  * Get device screen/display info via Qix COMMAND_RET_SCREEN_INFO (0xC7).
  * Sends COMMAND_REQ_SCREEN_INFO (0xC6) on FD02.
  */

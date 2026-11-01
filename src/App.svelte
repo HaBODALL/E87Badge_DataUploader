@@ -211,6 +211,11 @@
     background: rgba(0, 242, 255, 0.05);
   }
 
+  .file-drop:focus-within {
+    outline: 2px solid #00f2ff;
+    outline-offset: 2px;
+  }
+
   .file-drop.drag-over {
     border-color: #00f2ff;
     background: rgba(0, 242, 255, 0.1);

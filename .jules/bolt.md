@@ -1,3 +1,7 @@
 ## 2024-05-15 - CRC Bitwise Calculation on Main Thread
 **Learning:** In a codebase heavily relying on chunked Web Bluetooth transfers (like this AuraCast project sending image files byte-by-byte), running a nested loop `O(n * 8)` CRC bitwise calculation on the main thread for every chunk causes unnecessary CPU load and potential micro-stutters during uploads. Even though it's relatively fast, precomputing the CRC table (`O(n)`) completely avoids any CPU spike during the crucial transfer phase.
 **Action:** When working on protocols (like XMODEM, RCSP, or custom framing) that chunk data and sign each chunk with a CRC on the main thread, always use a table-driven approach instead of calculating bit-by-bit to maintain smooth UI and consistent throughput.
+
+## 2024-05-16 - Array Spread Overhead in Byte to Hex Conversion
+**Learning:** In highly active areas of the codebase like protocol debugging, continuously logging raw data chunks by spreading `Uint8Array` into `[...bytes]` and mapping over it to format strings is extremely expensive in Javascript. It requires memory allocations for intermediate arrays and overhead for string padding functions.
+**Action:** When converting byte arrays to hex strings repeatedly (especially in Bluetooth log loops), use a pre-allocated array map (lookup table) of pre-padded strings for each byte `(0-255)`, looping sequentially over the array and doing simple string concatenation.

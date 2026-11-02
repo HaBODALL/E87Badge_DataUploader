@@ -124,8 +124,6 @@
           <h3>Envoyer une image</h3>
           {#if !selectedImageUrl}
             <div class="file-drop {isDraggingOver ? 'drag-over' : ''}"
-              role="region"
-              aria-label="Zone de dépôt de fichier"
               on:dragenter={handleDragOver}
               on:dragover={handleDragOver}
               on:dragleave={handleDragLeave}

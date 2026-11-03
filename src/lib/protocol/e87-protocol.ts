@@ -71,7 +71,7 @@ export function parseE87Frame(data: Uint8Array): E87Frame | null {
   const flag = data[3]
   const cmd = data[4]
   const length = (data[5] << 8) | data[6]
-  const body = data.slice(7, data.length - 1)
+  const body = data.subarray(7, data.length - 1)
   if (body.length !== length) return null
   return { flag, cmd, length, body }
 }
@@ -97,7 +97,7 @@ function queuePreview(queue: Uint8Array[]): string {
     .map((raw) => {
       const f = parseE87Frame(raw)
       if (f) return `frame(flag=0x${f.flag.toString(16)},cmd=0x${f.cmd.toString(16)},len=${f.length})`
-      return `raw(${raw.length}):${toHex(raw.slice(0, Math.min(8, raw.length)))}`
+      return `raw(${raw.length}):${toHex(raw.subarray(0, Math.min(8, raw.length)))}`
     })
     .join(', ')
 }
@@ -578,7 +578,7 @@ export async function connectE87(log?: (msg: string) => void): Promise<E87Connec
         return // Already auto-acked, don't queue
       }
     } else {
-      log?.(`RX notify (${raw.length} bytes): ${toHex(raw.slice(0, Math.min(24, raw.length)))}`)
+      log?.(`RX notify (${raw.length} bytes): ${toHex(raw.subarray(0, Math.min(24, raw.length)))}`)
     }
     notificationQueue.push(raw)
     if (notificationQueue.length > 200) notificationQueue.shift()
@@ -693,7 +693,7 @@ function parseQixFrame(raw: Uint8Array): { cmd: number; flag: number; payload: U
   const cmd = raw[3]
   const plen = raw[4] | (raw[5] << 8)
   if (raw.length < 6 + plen) return null
-  return { cmd, flag, payload: raw.slice(6, 6 + plen) }
+  return { cmd, flag, payload: raw.subarray(6, 6 + plen) }
 }
 
 /** Send a Qix 0x9E command on FD02 and wait for a matching response on FD01/FD03 */
@@ -817,7 +817,7 @@ function parseSysInfoAttrs(payload: Uint8Array): E87SysInfoAttr[] {
     const dataEnd = dataStart + dataLen
     if (dataEnd > payload.length) break
     const type = payload[typeIdx] ?? 0
-    const data = payload.slice(dataStart, dataEnd)
+    const data = payload.subarray(dataStart, dataEnd)
     const decoded = decodeAttrValue(type, data)
     out.push({
       type,
@@ -849,7 +849,7 @@ function parseTargetInfoAttrs(payload: Uint8Array): Array<{
     const dataEnd = dataStart + dataLen
     if (dataEnd > payload.length) break
     const type = payload[typeIdx] ?? 0
-    const data = payload.slice(dataStart, dataEnd)
+    const data = payload.subarray(dataStart, dataEnd)
     out.push({
       type,
       name: TARGET_INFO_ATTR_NAMES[type] ?? `attr_${type}`,
@@ -961,7 +961,7 @@ export async function getTargetFeatureMapE87(conn: E87Connection, log: (msg: str
     return { mask: 0, raw: toHex(ack.body) }
   }
 
-  const payload = ack.body.slice(2)
+  const payload = ack.body.subarray(2)
   let mask = 0
   if (payload.length >= 4) {
     mask = ((payload[0] << 24) | (payload[1] << 16) | (payload[2] << 8) | payload[3]) >>> 0
@@ -986,7 +986,7 @@ export async function getTargetInfoE87(
     requestPlatform,
   )
   const ack = await sendRcspCommandAndWait(conn, 0x03, param, log, 10000)
-  const payload = ack.body.slice(2)
+  const payload = ack.body.subarray(2)
   log(`GetTargetInfo: payload ${payload.length} bytes`)
   return {
     requestMask,
@@ -1013,9 +1013,9 @@ export async function getSysInfoE87(
     mask & 0xff,
   )
   const ack = await sendRcspCommandAndWait(conn, 0x07, param, log, 10000)
-  const payload = ack.body.slice(2)
+  const payload = ack.body.subarray(2)
   const functionId = payload.length ? payload[0] : fn
-  const attrsRaw = payload.slice(Math.min(1, payload.length))
+  const attrsRaw = payload.subarray(Math.min(1, payload.length))
   const attrs = parseSysInfoAttrs(attrsRaw)
   log(`GetSysInfo: function=0x${functionId.toString(16)} attrs=${attrs.length}`)
   return {
@@ -1249,7 +1249,7 @@ export async function readSmallFileE87(
     }
   }
 
-  const data = ack.body.slice(Math.min(dataStart, ack.body.length))
+  const data = ack.body.subarray(Math.min(dataStart, ack.body.length))
   log(`Read small file type=${entry.typeName} id=${entry.id} bytes=${data.length}`)
   return { entry, data, crc16 }
 }
@@ -1376,7 +1376,7 @@ export async function browseFilesE87(
       const ack = await sendFileBrowseRequest(conn, log, type, readNum, startIndex, devHandler, clusters)
       const status = ack.body[0] ?? 0xff
       const statusName = RCSP_STATUS_NAMES[status] ?? `0x${status.toString(16)}`
-      log(`FileBrowse[${DEV_HANDLER_NAMES[devHandler] ?? devHandler}]: status=${statusName} body(${ack.body.length})=${toHex(ack.body.slice(0, Math.min(80, ack.body.length)))}`)
+      log(`FileBrowse[${DEV_HANDLER_NAMES[devHandler] ?? devHandler}]: status=${statusName} body(${ack.body.length})=${toHex(ack.body.subarray(0, Math.min(80, ack.body.length)))}`)
 
       // Give device a moment, then drain any StopFileBrowse commands it sends
       await sleep(200)
@@ -1387,7 +1387,7 @@ export async function browseFilesE87(
         continue
       }
 
-      const payload = ack.body.slice(2)
+      const payload = ack.body.subarray(2)
       if (payload.length === 0) {
         log(`FileBrowse[${DEV_HANDLER_NAMES[devHandler] ?? devHandler}]: success but empty payload.`)
         continue
@@ -1418,7 +1418,7 @@ function parseFileBrowseResponse(payload: Uint8Array, queryType: number, log: (m
   // Try to parse as a sequence of entries
   // The response format varies by device, so try multiple parsing strategies
   log(`FileBrowse: parsing ${payload.length} bytes of response data`)
-  log(`FileBrowse: raw hex: ${toHex(payload.slice(0, Math.min(120, payload.length)))}`)
+  log(`FileBrowse: raw hex: ${toHex(payload.subarray(0, Math.min(120, payload.length)))}`)
 
   // Strategy 1: try to decode as UTF-16LE name entries
   // Each entry might be: [cluster:4 BE][size:4 BE][name_len:1][name:UTF16LE]
@@ -1432,7 +1432,7 @@ function parseFileBrowseResponse(payload: Uint8Array, queryType: number, log: (m
     const nameLen = payload[i+8]
     if (nameLen === 0 || i + 9 + nameLen > payload.length) break
     // Try decoding name as UTF-16LE
-    const nameRaw = payload.slice(i + 9, i + 9 + nameLen)
+    const nameRaw = payload.subarray(i + 9, i + 9 + nameLen)
     let name: string
     try {
       // If nameLen is even, try UTF-16LE; otherwise treat as UTF-8
@@ -1449,7 +1449,7 @@ function parseFileBrowseResponse(payload: Uint8Array, queryType: number, log: (m
       isFolder: queryType === 0,
       sizeBytes,
       cluster,
-      rawHex: toHex(payload.slice(i, i + 9 + nameLen)),
+      rawHex: toHex(payload.subarray(i, i + 9 + nameLen)),
     })
     entryCount++
     i += 9 + nameLen

@@ -1761,6 +1761,18 @@ export async function writeFileE87(opts: UploadOptions): Promise<void> {
 
     let totalBytesSent = 0
 
+    // ⚡ Bolt: Pre-allocate a reusable frame buffer for data transfer chunks.
+    // This avoids creating two new Uint8Arrays (one for body, one for frame in sendE87Frame)
+    // for every single chunk, effectively dropping allocations to 0 during the transfer loop.
+    // The frame structure is: 3 bytes magic, 1 byte flag, 1 byte cmd, 2 bytes len, 5 bytes payload header, payload, 1 byte EOF
+    const maxFrameLen = 3 + 1 + 1 + 2 + 5 + chunkSize + 1
+    const reusableFrame = new Uint8Array(maxFrameLen)
+    reusableFrame[0] = 0xfe
+    reusableFrame[1] = 0xdc
+    reusableFrame[2] = 0xba
+    reusableFrame[3] = 0x80 // flag
+    reusableFrame[4] = 0x01 // cmd
+
     const sendChunksAt = async (offset: number, winSize: number) => {
       let slot = 0
       let bytesSent = 0
@@ -1780,13 +1792,23 @@ export async function writeFileE87(opts: UploadOptions): Promise<void> {
         const isCommitChunk = offset === 0 && winSize <= chunkSize
 
         const crc = crc16xmodem(payload)
-        const body = new Uint8Array(5 + payload.length)
-        body[0] = seq & 0xff
-        body[1] = 0x1d
-        body[2] = slot & 0xff
-        body[3] = (crc >> 8) & 0xff
-        body[4] = crc & 0xff
-        body.set(payload, 5)
+
+        const bodyLen = 5 + chunkLen
+        reusableFrame[5] = (bodyLen >> 8) & 0xff
+        reusableFrame[6] = bodyLen & 0xff
+
+        // Body payload header
+        reusableFrame[7] = seq & 0xff
+        reusableFrame[8] = 0x1d
+        reusableFrame[9] = slot & 0xff
+        reusableFrame[10] = (crc >> 8) & 0xff
+        reusableFrame[11] = crc & 0xff
+
+        // Payload data
+        reusableFrame.set(payload, 12)
+
+        const frameLen = 3 + 1 + 1 + 2 + bodyLen + 1
+        reusableFrame[frameLen - 1] = 0xef
 
         if (sentChunks === 0) {
           log(`FIRST chunk: seq=${seq & 0xff} slot=${slot & 0xff} crc=0x${crc.toString(16).padStart(4, '0')} offset=${chunkOffset} len=${chunkLen}`)
@@ -1795,7 +1817,10 @@ export async function writeFileE87(opts: UploadOptions): Promise<void> {
           log(`COMMIT chunk: seq=${seq & 0xff} slot=${slot & 0xff} crc=0x${crc.toString(16).padStart(4, '0')}`)
         }
 
-        await sendE87Frame(0x80, 0x01, body)
+        // Send the zero-copy view of the reusable frame
+        const frameToSend = reusableFrame.subarray(0, frameLen)
+        log(`TX frame flag=0x80 cmd=0x01 len=${bodyLen}`)
+        await writeChunk(frameToSend)
 
         sentChunks += 1
         totalBytesSent += chunkLen

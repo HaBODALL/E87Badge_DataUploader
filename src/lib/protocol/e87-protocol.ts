@@ -13,6 +13,10 @@ import { crc16xmodem } from './crc'
 
 export const E87_DATA_CHUNK_SIZE = 490
 
+// ⚡ Bolt: Cache TextDecoder instances to avoid allocations during hot paths (tryAscii, parseFileBrowseResponse)
+const textDecoderUtf8 = new TextDecoder()
+const textDecoderUtf16 = new TextDecoder('utf-16le')
+
 const SERVICE_CANDIDATES: BluetoothServiceUUID[] = [
   0xae00,
   '0000ae00-0000-1000-8000-00805f9b34fb',
@@ -876,7 +880,13 @@ function decodeAttrValue(type: number, data: Uint8Array): string | undefined {
 function decodeTargetInfoAttr(type: number, data: Uint8Array): string | undefined {
   if (!data.length) return undefined
   if (type === 2 && data.length === 6) {
-    return [...data].map((b) => b.toString(16).padStart(2, '0')).join(':')
+    // ⚡ Bolt: Avoid array spread and map allocation for MAC address parsing
+    let mac = ""
+    for (let i = 0; i < 6; i++) {
+      mac += data[i].toString(16).padStart(2, "0")
+      if (i < 5) mac += ":"
+    }
+    return mac
   }
   if (type === 10 && data.length >= 4) {
     const vid = ((data[0] << 8) | data[1]) >>> 0
@@ -903,7 +913,7 @@ function tryAscii(data: Uint8Array): string | undefined {
     }
   }
   if (!printable) return undefined
-  return new TextDecoder().decode(data)
+  return textDecoderUtf8.decode(data)
 }
 
 /**
@@ -1437,9 +1447,9 @@ function parseFileBrowseResponse(payload: Uint8Array, queryType: number, log: (m
     try {
       // If nameLen is even, try UTF-16LE; otherwise treat as UTF-8
       if (nameLen >= 2 && nameLen % 2 === 0) {
-        name = new TextDecoder('utf-16le').decode(nameRaw).replace(/\0+$/, '')
+        name = textDecoderUtf16.decode(nameRaw).replace(/\0+$/, '')
       } else {
-        name = new TextDecoder().decode(nameRaw).replace(/\0+$/, '')
+        name = textDecoderUtf8.decode(nameRaw).replace(/\0+$/, '')
       }
     } catch {
       name = toHex(nameRaw)

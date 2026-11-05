@@ -9,3 +9,7 @@
 ## 2026-10-25 - Zero-copy Views and ArrayBuffer Slice Overhead
 **Learning:** `Uint8Array.prototype.slice()` and `ArrayBuffer.prototype.slice()` allocate new backing memory, which can cause significant overhead and GC pressure when repeatedly called in a hot loop (like a Bluetooth chunked upload). However, `Uint8Array.prototype.subarray()` creates a zero-copy view and is vastly faster. When an actual copy of an ArrayBuffer is needed (e.g. queueing Bluetooth notification events safely from a shared DataView), using `new Uint8Array(new Uint8Array(buffer, offset, length))` is approximately 9x faster than using `buffer.slice()`.
 **Action:** Use `.subarray()` when extracting chunks for immediate sequential reading (like uploading payloads). Use `new Uint8Array(new Uint8Array(buffer, offset, length))` when safely cloning binary data off a volatile shared buffer (like Web Bluetooth characteristic value buffers).
+
+## 2024-05-14 - TextDecoder caching
+**Learning:** Instantiating `new TextDecoder()` inside high-frequency loops (like `parseFileBrowseResponse` or `tryAscii` which runs for every parsed attribute) adds unnecessary garbage collection pressure and main thread CPU load.
+**Action:** Cache and reuse `TextDecoder` and `TextEncoder` instances at the module level whenever they don't depend on specific stream states.

@@ -41,6 +41,9 @@ export interface DeviceOpsCallbacks {
   getSmallFiles: () => E87SmallFileEntry[]
 }
 
+// ⚡ Bolt: Cache TextDecoder instance to avoid allocations during file reads
+const textDecoderUtf8 = new TextDecoder()
+
 export interface DeviceOps {
   refreshBattery: () => Promise<void>
   getBrightness: () => Promise<void>
@@ -196,7 +199,7 @@ export function createDeviceOps(cb: DeviceOpsCallbacks): DeviceOps {
     }
     await runDeviceOp('Read file', async (c) => {
       const { data, crc16 } = await readSmallFileE87(c, item, log)
-      const asText = new TextDecoder().decode(data)
+      const asText = textDecoderUtf8.decode(data)
       const crcInfo = crc16 === null ? 'n/a' : `0x${crc16.toString(16).padStart(4, '0')}`
       setSmallFileReadText(`type=${item.typeName} id=${item.id} size=${data.length} crc=${crcInfo}\n\n${asText}`)
       setStatus(`Read ${data.length} byte(s) from ${item.typeName}#${item.id}.`)

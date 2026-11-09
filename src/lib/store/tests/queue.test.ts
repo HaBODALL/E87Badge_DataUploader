@@ -3,6 +3,7 @@ import 'fake-indexeddb/auto'
 import { transferQueue } from '../queue'
 import { clearQueue, getAllQueueItems } from '../db'
 import { get } from 'svelte/store'
+import { tick } from 'svelte'
 
 describe('transferQueue store', () => {
   beforeEach(async () => {
@@ -37,6 +38,8 @@ describe('transferQueue store', () => {
     const itemId = state.items[0].id
 
     await transferQueue.remove(itemId)
+    await tick()
+
 
     state = get(transferQueue)
     expect(state.items.length).toBe(0)

@@ -73,8 +73,22 @@
     }
   }
 
+  function clearImage() {
+    if (selectedImageUrl) {
+      URL.revokeObjectURL(selectedImageUrl)
+      selectedImageUrl = ''
+    }
+  }
+
   function handleFile(file: File) {
+    // Prevent memory exhaustion (DoS) by enforcing a 10MB limit
+    if (file.size > 10 * 1024 * 1024) {
+      alert("L'image est trop volumineuse. La taille maximale est de 10 Mo.")
+      return
+    }
+
     if (file.type.startsWith('image/')) {
+      if (selectedImageUrl) URL.revokeObjectURL(selectedImageUrl)
       selectedImageUrl = URL.createObjectURL(file)
     } else {
       alert("Veuillez déposer une image.")
@@ -96,8 +110,8 @@
         const filename = `img_${Date.now()}.jpg`
         transferQueue.add(bytes, filename)
 
-        // Clear selection
-        selectedImageUrl = ''
+        // Clear selection and revoke object URL
+        clearImage()
       }
       reader.readAsArrayBuffer(blob)
     }, 'image/jpeg', 0.88)
@@ -133,7 +147,7 @@
             </div>
           {:else}
             <CircularCropTool imageUrl={selectedImageUrl} on:crop={handleCrop} />
-            <button class="text-btn" on:click={() => selectedImageUrl = ''}>Annuler</button>
+            <button class="text-btn" on:click={clearImage}>Annuler</button>
           {/if}
         </div>
       </div>

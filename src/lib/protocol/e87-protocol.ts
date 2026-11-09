@@ -13,9 +13,10 @@ import { crc16xmodem } from './crc'
 
 export const E87_DATA_CHUNK_SIZE = 490
 
-// ⚡ Bolt: Cache TextDecoder instances to avoid allocations during hot paths (tryAscii, parseFileBrowseResponse)
+// ⚡ Bolt: Cache TextDecoder and TextEncoder instances to avoid allocations during hot paths
 const textDecoderUtf8 = new TextDecoder()
 const textDecoderUtf16 = new TextDecoder('utf-16le')
+const textEncoderUtf8 = new TextEncoder()
 
 const SERVICE_CANDIDATES: BluetoothServiceUUID[] = [
   0xae00,
@@ -897,22 +898,20 @@ function decodeTargetInfoAttr(type: number, data: Uint8Array): string | undefine
     const mtu = ((data[0] << 8) | data[1]) >>> 0
     return `mtu=${mtu}`
   }
-  if ((type === 11 || type === 12 || type === 16 || type === 31) && tryAscii(data)) {
-    return tryAscii(data)
+  if (type === 11 || type === 12 || type === 16 || type === 31) {
+    const asAscii = tryAscii(data)
+    if (asAscii) return asAscii
   }
   return decodeAttrValue(type, data)
 }
 
 function tryAscii(data: Uint8Array): string | undefined {
   if (!data.length) return undefined
-  let printable = true
-  for (const b of data) {
-    if (b < 0x20 || b > 0x7e) {
-      printable = false
-      break
+  for (let i = 0; i < data.length; i++) {
+    if (data[i] < 0x20 || data[i] > 0x7e) {
+      return undefined
     }
   }
-  if (!printable) return undefined
   return textDecoderUtf8.decode(data)
 }
 
@@ -1723,7 +1722,7 @@ export async function writeFileE87(opts: UploadOptions): Promise<void> {
     log('Phase 8: cmd 0x1b (file metadata)...')
     const fileSize = jpegBytes.length
     const tempName = randomTempName()
-    const nameBytes = new TextEncoder().encode(tempName)
+    const nameBytes = textEncoderUtf8.encode(tempName)
 
     const fileCrc = crc16xmodem(jpegBytes)
     log(`Whole-file CRC-16 XMODEM: 0x${fileCrc.toString(16).padStart(4, '0')}`)

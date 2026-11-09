@@ -13,3 +13,7 @@
 ## 2024-05-14 - TextDecoder caching
 **Learning:** Instantiating `new TextDecoder()` inside high-frequency loops (like `parseFileBrowseResponse` or `tryAscii` which runs for every parsed attribute) adds unnecessary garbage collection pressure and main thread CPU load.
 **Action:** Cache and reuse `TextDecoder` and `TextEncoder` instances at the module level whenever they don't depend on specific stream states.
+
+## 2026-11-06 - `for...of` Iterator Overhead in TypedArrays
+**Learning:** Using `for...of` loops to iterate over `Uint8Array` in highly active functions (like `tryAscii` which runs for every parsed attribute) introduces significant iterator overhead. Benchmarks show that a simple indexed `for (let i = 0; i < data.length; i++)` loop is considerably faster, cutting iteration time almost in half for small arrays parsed repeatedly.
+**Action:** When iterating over binary data arrays in hot paths (like parsing multiple GATT characteristic values or attributes), stick to classic indexed `for` loops rather than modern `for...of` iterators to avoid hidden allocations and overhead.

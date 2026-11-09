@@ -14,6 +14,8 @@
   let selectedImageUrl: string = ''
   let isDraggingOver = false
 
+  const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB limit pour éviter la surcharge mémoire (DoS)
+
   let checkInterval: number;
 
   onMount(() => {
@@ -73,8 +75,20 @@
     }
   }
 
+  function clearSelection() {
+    if (selectedImageUrl) {
+      URL.revokeObjectURL(selectedImageUrl);
+      selectedImageUrl = '';
+    }
+  }
+
   function handleFile(file: File) {
     if (file.type.startsWith('image/')) {
+      if (file.size > MAX_FILE_SIZE) {
+        alert("L'image est trop volumineuse (maximum 10 MB).");
+        return;
+      }
+      clearSelection();
       selectedImageUrl = URL.createObjectURL(file)
     } else {
       alert("Veuillez déposer une image.")
@@ -97,7 +111,7 @@
         transferQueue.add(bytes, filename)
 
         // Clear selection
-        selectedImageUrl = ''
+        clearSelection()
       }
       reader.readAsArrayBuffer(blob)
     }, 'image/jpeg', 0.88)
@@ -133,7 +147,7 @@
             </div>
           {:else}
             <CircularCropTool imageUrl={selectedImageUrl} on:crop={handleCrop} />
-            <button class="text-btn" on:click={() => selectedImageUrl = ''}>Annuler</button>
+            <button class="text-btn" on:click={clearSelection}>Annuler</button>
           {/if}
         </div>
       </div>

@@ -74,7 +74,15 @@
   }
 
   function handleFile(file: File) {
+    const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+    if (file.size > MAX_FILE_SIZE) {
+      alert("L'image est trop volumineuse. Veuillez choisir un fichier de moins de 10 Mo.");
+      return;
+    }
     if (file.type.startsWith('image/')) {
+      if (selectedImageUrl) {
+        URL.revokeObjectURL(selectedImageUrl);
+      }
       selectedImageUrl = URL.createObjectURL(file)
     } else {
       alert("Veuillez déposer une image.")
@@ -97,6 +105,9 @@
         transferQueue.add(bytes, filename)
 
         // Clear selection
+        if (selectedImageUrl) {
+          URL.revokeObjectURL(selectedImageUrl);
+        }
         selectedImageUrl = ''
       }
       reader.readAsArrayBuffer(blob)
@@ -133,7 +144,7 @@
             </div>
           {:else}
             <CircularCropTool imageUrl={selectedImageUrl} on:crop={handleCrop} />
-            <button class="text-btn" on:click={() => selectedImageUrl = ''}>Annuler</button>
+            <button class="text-btn" on:click={() => { if (selectedImageUrl) URL.revokeObjectURL(selectedImageUrl); selectedImageUrl = '' }}>Annuler</button>
           {/if}
         </div>
       </div>

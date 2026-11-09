@@ -1,0 +1,6 @@
+## 2026-08-15 - [DoS & Memory Leaks via Client-Side File Uploads]
+**Vulnerability:** The application was vulnerable to a memory exhaustion Denial of Service (DoS) because there was no file size limit on user-uploaded images, allowing massive files to be processed client-side. Furthermore, Object URLs created via `URL.createObjectURL(file)` for image preview were never explicitly revoked with `URL.revokeObjectURL()`, leading to continuous memory leaks as users selected, replaced, or cancelled images.
+**Learning:** In Svelte (and single-page apps generally), Object URLs tie up memory until the document is unloaded unless explicitly freed. Relying on garbage collection is insufficient for `Blob` references created this way. Also, allowing unrestricted file sizes into memory-intensive operations (like canvas cropping) can crash the user's browser tab.
+**Prevention:**
+1. Always enforce a strict `MAX_FILE_SIZE` (e.g., 10MB) before accepting any file from an `<input type="file">` or Drag & Drop event.
+2. Always call `URL.revokeObjectURL(url)` immediately before overwriting a URL variable, when the user cancels an operation, or right after the image blob is no longer needed in the application flow.

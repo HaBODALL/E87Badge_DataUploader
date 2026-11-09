@@ -13,3 +13,7 @@
 ## 2024-05-14 - TextDecoder caching
 **Learning:** Instantiating `new TextDecoder()` inside high-frequency loops (like `parseFileBrowseResponse` or `tryAscii` which runs for every parsed attribute) adds unnecessary garbage collection pressure and main thread CPU load.
 **Action:** Cache and reuse `TextDecoder` and `TextEncoder` instances at the module level whenever they don't depend on specific stream states.
+
+## 2026-11-09 - Iteration Overhead and Closure Allocations
+**Learning:** In hot loops such as protocol byte decoding (`tryAscii`), iterating over typed arrays (`Uint8Array`) using `for...of` introduces measurable overhead compared to traditional indexed `for` loops. Additionally, using array functional methods like `.reduce()` or `.map()` in frequently called methods can incur unnecessary closure allocations, contributing to GC pauses.
+**Action:** Replace `for...of` loops and array higher-order functions (`.reduce`, `.map`) with indexed `for` loops for performance-critical parsing functions to avoid closure overhead and array allocation costs.

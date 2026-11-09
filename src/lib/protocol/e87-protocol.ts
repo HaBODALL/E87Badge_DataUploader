@@ -897,22 +897,24 @@ function decodeTargetInfoAttr(type: number, data: Uint8Array): string | undefine
     const mtu = ((data[0] << 8) | data[1]) >>> 0
     return `mtu=${mtu}`
   }
-  if ((type === 11 || type === 12 || type === 16 || type === 31) && tryAscii(data)) {
-    return tryAscii(data)
+  // ⚡ Bolt: Cache result of tryAscii to avoid evaluating it twice
+  if (type === 11 || type === 12 || type === 16 || type === 31) {
+    const asc = tryAscii(data)
+    if (asc) return asc
   }
   return decodeAttrValue(type, data)
 }
 
+// ⚡ Bolt: Use indexed for loop instead of for...of to eliminate iterator overhead.
+// Return early to avoid using flags.
 function tryAscii(data: Uint8Array): string | undefined {
   if (!data.length) return undefined
-  let printable = true
-  for (const b of data) {
+  for (let i = 0; i < data.length; i++) {
+    const b = data[i]
     if (b < 0x20 || b > 0x7e) {
-      printable = false
-      break
+      return undefined
     }
   }
-  if (!printable) return undefined
   return textDecoderUtf8.decode(data)
 }
 

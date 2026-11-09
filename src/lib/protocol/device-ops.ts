@@ -322,7 +322,11 @@ export async function getStorageInfoE87(client: E87Client, log: (msg: string) =>
   if (!client || !client.connection) return null;
   try {
     const files = await browseFilesE87(client.connection, log);
-    const usedBytes = files.reduce((sum, f) => sum + f.sizeBytes, 0);
+    // ⚡ Bolt: Replaced .reduce with an indexed for-loop to avoid closure allocations and array iteration overhead
+    let usedBytes = 0;
+    for (let i = 0; i < files.length; i++) {
+      usedBytes += files[i].sizeBytes;
+    }
     const totalBytes = 900_000;
     return {
       usedBytes,

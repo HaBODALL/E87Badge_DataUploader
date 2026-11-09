@@ -13,3 +13,7 @@
 ## 2024-05-14 - TextDecoder caching
 **Learning:** Instantiating `new TextDecoder()` inside high-frequency loops (like `parseFileBrowseResponse` or `tryAscii` which runs for every parsed attribute) adds unnecessary garbage collection pressure and main thread CPU load.
 **Action:** Cache and reuse `TextDecoder` and `TextEncoder` instances at the module level whenever they don't depend on specific stream states.
+
+## 2026-10-25 - Uint8Array Iterator Overhead
+**Learning:** Using `for...of` loops to iterate over `Uint8Array` instances (e.g., in checksum calculations like `buildQixFrame` or simple parses like `tryAscii`) introduces noticeable iterator allocation overhead in JavaScript, especially when executed frequently during protocol communication.
+**Action:** Always prefer traditional indexed `for` loops (`for (let i = 0; i < data.length; i++)`) for iterating over typed arrays like `Uint8Array` in hot paths to eliminate this overhead.

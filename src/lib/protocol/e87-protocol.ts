@@ -661,7 +661,8 @@ function buildQixFrame(cmd: number, payload: Uint8Array, flag: number): Uint8Arr
   inner[3] = lenHi
   inner.set(payload, 4)
   let chk = 0
-  for (const b of inner) chk = (chk + b) & 0xff
+  // ⚡ Bolt: Use an indexed for loop instead of for...of to eliminate iterator overhead for Uint8Array
+  for (let i = 0; i < inner.length; i++) chk = (chk + inner[i]) & 0xff
   const frame = new Uint8Array(2 + inner.length)
   frame[0] = 0x9e
   frame[1] = chk
@@ -906,7 +907,9 @@ function decodeTargetInfoAttr(type: number, data: Uint8Array): string | undefine
 function tryAscii(data: Uint8Array): string | undefined {
   if (!data.length) return undefined
   let printable = true
-  for (const b of data) {
+  // ⚡ Bolt: Use an indexed for loop instead of for...of to eliminate iterator overhead for Uint8Array
+  for (let i = 0; i < data.length; i++) {
+    const b = data[i]
     if (b < 0x20 || b > 0x7e) {
       printable = false
       break

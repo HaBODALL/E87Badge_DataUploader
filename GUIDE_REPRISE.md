@@ -53,7 +53,7 @@ Pour lire ce code, voici les trois piliers techniques à maîtriser :
 
 ### A. Svelte (Le Front-end)
 Svelte compile le code au lieu de l'exécuter dans le navigateur comme React. Un fichier `.svelte` a trois parties (`<script>`, le HTML, `<style>`).
-*   **Réactivité basique :** Dans `App.svelte`, tu verras `let isConnected = false`. Quand on veut forcer la mise à jour de l'écran après une action, tu pourrais voir une assignation sur elle-même (ex: `client = client // trigger reactivity`). Svelte 5 introduit aussi les runes (comme `$state()`) pour la réactivité, mais le principe reste de mettre à jour la variable pour mettre à jour l'écran.
+*   **Réactivité basique :** Dans `App.svelte`, tu verras `let isConnected = false`. `App.svelte` est la seule source de vérité de l'état de connexion : il le met à jour à la connexion et via `client.onDisconnect`, puis le transmet aux composants par la prop `connected`. Svelte 5 introduit aussi les runes (comme `$state()`) pour la réactivité, mais le principe reste de mettre à jour la variable pour mettre à jour l'écran.
 *   **Les Événements :** L'écoute d'un clic se fait via `on:click={connect}`. La communication entre composants se fait parfois via des `CustomEvent` (ex: `CircularCropTool` envoie un événement `crop` récupéré par `handleCrop` dans App.svelte).
 
 ### B. L'Asynchronisme et Web Bluetooth

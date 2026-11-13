@@ -1,42 +1,39 @@
 <!-- src/lib/components/TopAppBar.svelte -->
 <script lang="ts">
-  import { onMount, onDestroy } from 'svelte'
-  import { E87Client } from '../protocol/e87-protocol'
+  import { onDestroy } from 'svelte'
+  import type { E87Client } from '../protocol/e87-protocol'
 
-  export let client: E87Client | null = null
+  export let client: E87Client
+  export let connected = false
+
+  const BATTERY_REFRESH_MS = 30000
 
   let batteryLevel: number | null = null
-  let isConnected = false
+  let batteryInterval = 0
 
-  let batteryInterval: number
-
-  $: {
-    isConnected = !!client && client['connected']
-  }
-
-  // Auto-refresh battery if connected
-  $: if (isConnected) {
-    refreshBattery()
-    if (!batteryInterval) {
-      batteryInterval = window.setInterval(refreshBattery, 30000)
-    }
+  $: if (connected) {
+    startBatteryPolling()
   } else {
-    batteryLevel = null
-    if (batteryInterval) {
-      clearInterval(batteryInterval)
-      batteryInterval = 0
-    }
+    stopBatteryPolling()
   }
 
-  onDestroy(() => {
-    if (batteryInterval) clearInterval(batteryInterval)
-  })
+  onDestroy(stopBatteryPolling)
+
+  function startBatteryPolling() {
+    if (batteryInterval) return
+    void refreshBattery()
+    batteryInterval = window.setInterval(refreshBattery, BATTERY_REFRESH_MS)
+  }
+
+  function stopBatteryPolling() {
+    clearInterval(batteryInterval)
+    batteryInterval = 0
+    batteryLevel = null
+  }
 
   async function refreshBattery() {
-    if (client) {
-      const lvl = await client.getBatteryLevel()
-      if (lvl > 0) batteryLevel = lvl
-    }
+    const lvl = await client.getBatteryLevel()
+    if (connected && lvl > 0) batteryLevel = lvl
   }
 
   function getBatteryColor(level: number) {
@@ -50,7 +47,7 @@
   <div class="brand">E87Badge_DataUploader</div>
 
   <div class="actions">
-    {#if isConnected}
+    {#if connected}
       {#if batteryLevel !== null}
         <div class="battery" style="color: {getBatteryColor(batteryLevel)}">
           ⚡ {batteryLevel}%

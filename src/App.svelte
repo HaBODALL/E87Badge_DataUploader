@@ -8,51 +8,48 @@
   import { E87Client } from './lib/protocol/e87-protocol'
   import { transferQueue } from './lib/store/queue'
 
-  let client: E87Client | null = null
-  let isConnected = false
+  const client = new E87Client()
+  client.onDisconnect = () => { isConnected = false }
+  transferQueue.setClient(client)
 
-  let selectedImageUrl: string = ''
+  let isConnected = false
+  let isConnecting = false
+  let connectError = ''
+
+  let selectedImageUrl = ''
   let isDraggingOver = false
 
-  let checkInterval: number;
-
-  onMount(() => {
-    client = new E87Client()
-    transferQueue.setClient(client)
-
-    checkInterval = window.setInterval(() => {
-      if (client) {
-        isConnected = client['connected'];
-      }
-    }, 2000);
-
-    return () => clearInterval(checkInterval);
+  onMount(() => () => {
+    clearSelection()
+    void client.disconnect()
   })
 
   async function connect() {
-    if (!client) return
+    isConnecting = true
+    connectError = ''
     try {
       await client.connect()
       isConnected = true
-      client = client // trigger reactivity
+      void transferQueue.process()
     } catch (e) {
-      console.error("Connection failed", e)
+      // Closing the browser's device picker is not an error worth showing.
+      if (!(e instanceof DOMException && e.name === 'NotFoundError')) {
+        console.error('Connection failed', e)
+        connectError = e instanceof Error ? e.message : String(e)
+      }
+    } finally {
+      isConnecting = false
     }
   }
 
   function disconnect() {
-    if (client) {
-      client.disconnect()
-      isConnected = false
-      client = client
-    }
+    void client.disconnect()
+    isConnected = false
   }
 
   function handleFileSelect(event: Event) {
-    const input = event.target as HTMLInputElement
-    if (input.files && input.files[0]) {
-      handleFile(input.files[0])
-    }
+    const file = (event.target as HTMLInputElement).files?.[0]
+    if (file) handleFile(file)
   }
 
   function handleDragOver(event: DragEvent) {
@@ -68,51 +65,48 @@
   function handleDrop(event: DragEvent) {
     event.preventDefault()
     isDraggingOver = false
-    if (event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files.length > 0) {
-      handleFile(event.dataTransfer.files[0])
-    }
+    const file = event.dataTransfer?.files[0]
+    if (file) handleFile(file)
+  }
+
+  function clearSelection() {
+    if (selectedImageUrl) URL.revokeObjectURL(selectedImageUrl)
+    selectedImageUrl = ''
   }
 
   function handleFile(file: File) {
-    if (file.type.startsWith('image/')) {
-      selectedImageUrl = URL.createObjectURL(file)
-    } else {
-      alert("Veuillez déposer une image.")
+    if (!file.type.startsWith('image/')) {
+      alert('Veuillez déposer une image.')
+      return
     }
+    clearSelection()
+    selectedImageUrl = URL.createObjectURL(file)
   }
 
-  function handleCrop(event: CustomEvent<{dataUrl: string, finalCanvas: HTMLCanvasElement}>) {
-    // In a real app we need to convert the base64/canvas to a Uint8Array of JPEG bytes
-    // For MVP, we will simulate the binary extraction
-
-    event.detail.finalCanvas.toBlob(blob => {
+  function handleCrop(event: CustomEvent<{ finalCanvas: HTMLCanvasElement }>) {
+    event.detail.finalCanvas.toBlob(async blob => {
       if (!blob) return
-      const reader = new FileReader()
-      reader.onload = function() {
-        const arrayBuffer = this.result as ArrayBuffer
-        const bytes = new Uint8Array(arrayBuffer)
-
-        // Add to queue
-        const filename = `img_${Date.now()}.jpg`
-        transferQueue.add(bytes, filename)
-
-        // Clear selection
-        selectedImageUrl = ''
-      }
-      reader.readAsArrayBuffer(blob)
+      const bytes = new Uint8Array(await blob.arrayBuffer())
+      await transferQueue.add(bytes, `img_${Date.now()}.jpg`)
+      clearSelection()
     }, 'image/jpeg', 0.88)
   }
 </script>
 
 <main>
-  <TopAppBar {client} />
+  <TopAppBar {client} connected={isConnected} />
 
   <div class="content">
     <div class="connection-card">
       {#if !isConnected}
-        <h2>Connectez votre badge E87Badge_DataUploader</h2>
+        <h2>Connectez votre badge E87</h2>
         <p>Utilisez Web Bluetooth pour vous connecter.</p>
-        <button class="primary-btn" on:click={connect}>Connecter</button>
+        <button class="primary-btn" on:click={connect} disabled={isConnecting}>
+          {isConnecting ? 'Connexion…' : 'Connecter'}
+        </button>
+        {#if connectError}
+          <p class="error" role="alert">Connexion impossible : {connectError}</p>
+        {/if}
       {:else}
         <button class="secondary-btn" on:click={disconnect}>Déconnecter</button>
       {/if}
@@ -124,6 +118,8 @@
           <h3>Envoyer une image</h3>
           {#if !selectedImageUrl}
             <div class="file-drop {isDraggingOver ? 'drag-over' : ''}"
+              role="group"
+              aria-label="Zone de dépôt d'image"
               on:dragenter={handleDragOver}
               on:dragover={handleDragOver}
               on:dragleave={handleDragLeave}
@@ -133,27 +129,20 @@
             </div>
           {:else}
             <CircularCropTool imageUrl={selectedImageUrl} on:crop={handleCrop} />
-            <button class="text-btn" on:click={() => selectedImageUrl = ''}>Annuler</button>
+            <button class="text-btn" on:click={clearSelection}>Annuler</button>
           {/if}
         </div>
       </div>
 
       <div class="right-col">
         <TransferQueue />
-        <StorageInfo {client} />
+        <StorageInfo {client} connected={isConnected} />
       </div>
     </div>
   </div>
 </main>
 
 <style>
-  :global(body) {
-    margin: 0;
-    font-family: 'Inter', system-ui, sans-serif;
-    background-color: #0a0b1e;
-    color: #e4e1e9;
-  }
-
   main {
     min-height: 100vh;
     display: flex;
@@ -245,7 +234,17 @@
     transition: all 0.2s ease-in-out;
   }
 
-  .primary-btn:hover {
+  .primary-btn:disabled {
+    opacity: 0.6;
+    cursor: wait;
+  }
+
+  .error {
+    color: #ffb4ab;
+    margin-bottom: 0;
+  }
+
+  .primary-btn:not(:disabled):hover {
     background: #4dffff;
     transform: translateY(-1px);
   }

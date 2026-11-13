@@ -4,72 +4,42 @@
   import { getStorageInfoE87 } from '../protocol/device-ops'
   import type { E87Client } from '../protocol/e87-protocol'
 
-  export let client: E87Client | null = null
+  export let client: E87Client
+  export let connected = false
 
-  let storage: { usedBytes: number, freeBytes: number, totalBytes: number, usagePercent: number } | null = null
+  let storage: Awaited<ReturnType<typeof getStorageInfoE87>> = null
   let loading = false
 
-  $: if (client && client['connected']) {
-    refreshStorage()
+  $: if (connected) {
+    void refreshStorage()
   } else {
     storage = null
   }
 
   onMount(() => {
-    const handleUploadDone = () => {
-      if (client && client['connected']) {
-        refreshStorage()
-      }
-    }
-
-    window.addEventListener('e87_upload_done', handleUploadDone)
-    return () => window.removeEventListener('e87_upload_done', handleUploadDone)
+    window.addEventListener('e87_upload_done', refreshStorage)
+    return () => window.removeEventListener('e87_upload_done', refreshStorage)
   })
 
   async function refreshStorage() {
-    if (!client) return
+    if (!connected) return
     loading = true
-    storage = await getStorageInfoE87(client)
+    const info = await getStorageInfoE87(client)
+    if (connected) storage = info
     loading = false
   }
 
   function formatKB(bytes: number) {
     return Math.round(bytes / 1024) + ' KB'
   }
-
-  async function clearBadge() {
-    if (!client || !client.connection) return
-    if (!confirm("Voulez-vous vraiment purger toutes les images du badge ?")) return
-
-    loading = true
-    try {
-      // In AuraCast, images are stored in a specific way. To format or delete large files,
-      // there might not be a direct RCSP command exposed for it in the MVP,
-      // but according to the protocol we shouldn't delete small files!
-      // We will revert to mocking the purge or just removing the functionality
-      // if there's no safe way to do it. The reviewer pointed out we were deleting small files (contacts etc).
-      // Let's mock it for now safely so we don't destroy user data.
-      await new Promise(r => setTimeout(r, 1000))
-      alert("La purge réelle n'est pas supportée dans cette version sans risquer les données.")
-    } catch(e) {
-      console.error(e)
-      alert("Erreur lors de la purge.")
-    }
-    loading = false
-  }
 </script>
 
 <div class="storage-panel">
   <div class="header">
     <h3>Espace de stockage</h3>
-    <div class="actions">
-      <button on:click={refreshStorage} disabled={loading || !client}>
-        {loading ? '...' : 'Rafraîchir'}
-      </button>
-      <button class="danger" on:click={clearBadge} disabled={loading || !client}>
-        Purger
-      </button>
-    </div>
+    <button on:click={refreshStorage} disabled={loading || !connected}>
+      {loading ? '...' : 'Rafraîchir'}
+    </button>
   </div>
 
   {#if storage}
@@ -80,8 +50,10 @@
       <span>{formatKB(storage.usedBytes)} utilisés</span>
       <span>{formatKB(storage.totalBytes)} total</span>
     </div>
-  {:else if !client}
+  {:else if !connected}
     <div class="empty">Connectez le badge pour voir le stockage</div>
+  {:else if loading}
+    <div class="empty">Lecture…</div>
   {:else}
     <div class="empty">Erreur de lecture</div>
   {/if}
@@ -105,10 +77,6 @@
 
   h3 { margin: 0; font-size: 1.1rem; }
 
-  .actions {
-    display: flex;
-    gap: 8px;
-  }
 
   button {
     background: #1e4d51;
@@ -130,18 +98,8 @@
     outline-offset: 2px;
   }
 
-  button.danger {
-    background: #690005;
-    color: #ffb4ab;
-  }
 
-  button.danger:not(:disabled):hover {
-    background: #93000a;
-  }
 
-  button.danger:not(:disabled):focus-visible {
-    outline: 2px solid #ffb4ab;
-  }
 
   button:disabled {
     opacity: 0.5;

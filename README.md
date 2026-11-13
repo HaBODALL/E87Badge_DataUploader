@@ -36,6 +36,11 @@ pnpm install
 # Démarrer le serveur de développement (PWA Web)
 pnpm run dev
 
+# Vérifier les types, lancer les tests, construire la version web
+pnpm run check
+pnpm test
+pnpm run build
+
 # Démarrer l'environnement de développement Android (Tauri)
 pnpm tauri android dev
 ```

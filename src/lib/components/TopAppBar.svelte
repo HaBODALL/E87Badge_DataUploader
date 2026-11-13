@@ -37,70 +37,119 @@
   }
 
   function getBatteryColor(level: number) {
-    if (level >= 80) return '#00e676'
-    if (level >= 20) return '#ffb74d'
-    return '#ff5252'
+    if (level >= 50) return 'var(--success)'
+    if (level >= 20) return 'var(--warning)'
+    return 'var(--danger)'
   }
 </script>
 
 <header class="app-bar">
-  <div class="brand">E87Badge_DataUploader</div>
+  <div class="brand">
+    <img src="favicon.svg" alt="" width="28" height="28" />
+    <span>E87 Badge <em>Uploader</em></span>
+  </div>
 
   <div class="actions">
-    {#if connected}
-      {#if batteryLevel !== null}
-        <div class="battery" style="color: {getBatteryColor(batteryLevel)}">
-          ⚡ {batteryLevel}%
-        </div>
-      {/if}
-      <div class="status online">Connecté</div>
-    {:else}
-      <div class="status offline">Hors ligne</div>
+    {#if connected && batteryLevel !== null}
+      <div class="battery" title="Batterie du badge" style="--level: {batteryLevel}%; --color: {getBatteryColor(batteryLevel)}">
+        <span class="cell" aria-hidden="true"><span></span></span>
+        {batteryLevel}%
+      </div>
     {/if}
+    <div class="status" class:online={connected}>
+      <span class="dot" aria-hidden="true"></span>
+      {connected ? 'Connecté' : 'Hors ligne'}
+    </div>
   </div>
 </header>
 
 <style>
   .app-bar {
-    height: 64px;
-    background: #131318;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    height: 60px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0 16px;
-    color: #e4e1e9;
+    padding: 0 20px;
+    background: rgba(10, 11, 30, 0.75);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
   }
 
   .brand {
-    font-size: 1.2rem;
-    font-weight: bold;
-    color: #00f2ff;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 700;
+    font-size: 1.05rem;
+  }
+
+  .brand em {
+    font-style: normal;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
   }
 
   .actions {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 14px;
+    font-size: 0.85rem;
+    font-weight: 500;
   }
 
   .battery {
-    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--text);
+  }
+
+  .cell {
+    width: 22px;
+    height: 11px;
+    padding: 1px;
+    border: 1.5px solid var(--muted);
+    border-radius: 3px;
+    box-sizing: border-box;
+  }
+
+  .cell span {
+    display: block;
+    height: 100%;
+    width: var(--level);
+    background: var(--color);
+    border-radius: 1px;
   }
 
   .status {
-    padding: 4px 12px;
-    border-radius: 16px;
-    font-size: 0.9rem;
-    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 12px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--muted);
   }
 
-  .online {
-    background: #004f54;
-    color: #00f2ff;
+  .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--muted);
   }
 
-  .offline {
-    background: #303036;
-    color: #908f9f;
+  .status.online {
+    background: rgba(61, 220, 151, 0.12);
+    color: var(--success);
+  }
+
+  .status.online .dot {
+    background: var(--success);
+    box-shadow: 0 0 8px var(--success);
   }
 </style>

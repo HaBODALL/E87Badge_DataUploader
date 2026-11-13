@@ -1,7 +1,7 @@
 // src/lib/store/db.ts
 import { openDB, type IDBPDatabase } from 'idb'
 
-const DB_NAME = 'auracast_db'
+const DB_NAME = 'e87badge_db'
 const DB_VERSION = 1
 const STORE_NAME = 'queue'
 

@@ -30,107 +30,75 @@
   }
 
   function formatKB(bytes: number) {
-    return Math.round(bytes / 1024) + ' KB'
+    return Math.round(bytes / 1024) + ' Ko'
   }
 </script>
 
-<div class="storage-panel">
+<section class="card">
   <div class="header">
-    <h3>Espace de stockage</h3>
-    <button on:click={refreshStorage} disabled={loading || !connected}>
-      {loading ? '...' : 'Rafraîchir'}
+    <h3 class="card-title">Stockage du badge</h3>
+    <button class="btn btn-soft btn-sm" on:click={refreshStorage} disabled={loading || !connected}>
+      {loading ? 'Lecture…' : 'Rafraîchir'}
     </button>
   </div>
 
   {#if storage}
-    <div class="bar-container">
-      <div class="bar-fill" style="width: {storage.usagePercent}%"></div>
+    <div class="figures">
+      <strong>{formatKB(storage.freeBytes)}</strong>
+      <span class="muted">libres sur {formatKB(storage.totalBytes)} (estimation)</span>
     </div>
-    <div class="details">
-      <span>{formatKB(storage.usedBytes)} utilisés</span>
-      <span>{formatKB(storage.totalBytes)} total</span>
+    <div class="bar" role="progressbar" aria-label="Espace utilisé" aria-valuemin="0" aria-valuemax="100" aria-valuenow={Math.round(storage.usagePercent)}>
+      <div class="fill" class:full={storage.usagePercent > 85} style="width: {storage.usagePercent}%"></div>
     </div>
   {:else if !connected}
-    <div class="empty">Connectez le badge pour voir le stockage</div>
+    <p class="muted empty">Connectez le badge pour voir le stockage.</p>
   {:else if loading}
-    <div class="empty">Lecture…</div>
+    <p class="muted empty">Lecture…</p>
   {:else}
-    <div class="empty">Erreur de lecture</div>
+    <p class="muted empty">Lecture impossible.</p>
   {/if}
-</div>
+</section>
 
 <style>
-  .storage-panel {
-    background: #131318;
-    border-radius: 28px;
-    padding: 16px;
-    color: #e4e1e9;
-    margin-top: 16px;
-  }
-
   .header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 16px;
+    gap: 12px;
+    margin-bottom: 14px;
   }
 
-  h3 { margin: 0; font-size: 1.1rem; }
-
-
-  button {
-    background: #1e4d51;
-    color: #00f2ff;
-    border: none;
-    border-radius: 12px;
-    padding: 4px 12px;
-    cursor: pointer;
-    transition: all 0.2s ease-in-out;
+  .figures {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 10px;
+    font-size: 0.9rem;
   }
 
-  button:not(:disabled):hover {
-    background: #256166;
-    transform: translateY(-1px);
+  .figures strong {
+    font-size: 1.4rem;
   }
 
-  button:not(:disabled):focus-visible {
-    outline: 2px solid #00f2ff;
-    outline-offset: 2px;
-  }
-
-
-
-
-  button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  .bar-container {
+  .bar {
     height: 8px;
-    background: #303036;
+    background: var(--surface-2);
     border-radius: 4px;
     overflow: hidden;
-    margin-bottom: 8px;
   }
 
-  .bar-fill {
+  .fill {
     height: 100%;
-    background: #bc00ff; /* Secondary color for storage */
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    border-radius: 4px;
     transition: width 0.3s;
   }
 
-  .details {
-    display: flex;
-    justify-content: space-between;
-    font-size: 0.85rem;
-    color: #908f9f;
+  .fill.full {
+    background: var(--danger);
   }
 
   .empty {
-    text-align: center;
-    color: #908f9f;
-    padding: 8px;
     font-size: 0.9rem;
   }
 </style>

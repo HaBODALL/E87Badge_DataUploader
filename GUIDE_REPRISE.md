@@ -43,7 +43,7 @@ Voici la carte détaillée pour t'y retrouver dans le dossier `src/` :
     *   `queue.ts` : Contient `transferQueue`, le gestionnaire qui prend les bytes de l'image recadrée (`App.svelte` l'appelle avec `transferQueue.add(bytes, filename)`) et planifie leur envoi au badge.
 *   📁 `src-tauri/`
     **Configuration de l'application native :**
-    *   `tauri.conf.json` : C'est ici que tu peux changer le nom de l'application, la version, ou l'identifiant du bundle Android (ex: `com.e87badge.dev`).
+    *   `tauri.conf.json` : C'est ici que tu peux changer le nom de l'application, la version, ou l'identifiant du bundle Android (actuellement `com.e87badge.datauploader`).
 
 ---
 

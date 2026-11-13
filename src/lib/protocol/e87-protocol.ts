@@ -897,8 +897,9 @@ function decodeTargetInfoAttr(type: number, data: Uint8Array): string | undefine
     const mtu = ((data[0] << 8) | data[1]) >>> 0
     return `mtu=${mtu}`
   }
-  if ((type === 11 || type === 12 || type === 16 || type === 31) && tryAscii(data)) {
-    return tryAscii(data)
+  if (type === 11 || type === 12 || type === 16 || type === 31) {
+    const ascii = tryAscii(data)
+    if (ascii) return ascii
   }
   return decodeAttrValue(type, data)
 }
@@ -2016,53 +2017,76 @@ export async function setBrightnessE87(
 }
 
 
-// Wrapper for compatibility with existing components
+/** High-level client used by the UI. */
 export class E87Client {
-  public connection: E87Connection | null = null;
-  public log: (msg: string) => void;
+  public connection: E87Connection | null = null
+  public log: (msg: string) => void
+  /** Called when the badge disconnects, whoever initiated it. */
+  public onDisconnect: (() => void) | null = null
+
+  // The badge handles one exchange at a time: every operation goes through this chain.
+  private pending: Promise<unknown> = Promise.resolve()
 
   constructor(logger?: (msg: string) => void) {
-    this.log = logger || (() => {});
+    this.log = logger || (() => {})
   }
 
-  public get connected() {
-    return this.connection?.server?.connected || false;
+  public get connected(): boolean {
+    return this.connection?.server?.connected || false
+  }
+
+  /** Run `op` once all previously queued operations have settled. */
+  exclusive<T>(op: () => Promise<T>): Promise<T> {
+    const result = this.pending.then(op, op)
+    this.pending = result.catch(() => {})
+    return result
   }
 
   async connect() {
-    this.connection = await connectE87(this.log);
+    const conn = await connectE87(this.log)
+    this.connection = conn
+    conn.device.addEventListener(
+      'gattserverdisconnected',
+      () => {
+        if (this.connection === conn) this.connection = null
+        this.onDisconnect?.()
+      },
+      { once: true },
+    )
   }
 
   async disconnect() {
-    if (this.connection) {
-      await disconnectE87(this.connection, this.log);
-      this.connection = null;
-    }
+    const conn = this.connection
+    if (!conn) return
+    await disconnectE87(conn, this.log)
+    if (this.connection === conn) this.connection = null
   }
 
-
+  /** Battery level in percent, or 0 when unknown. */
   async getBatteryLevel(): Promise<number> {
-    if (!this.connection) return 0;
-    try {
-      // Actually e87-protocol has refreshBatteryE87
-      return (await refreshBatteryE87(this.connection, this.log)).level || 0;
-
-    } catch(e) { return 0; }
+    return this.exclusive(async () => {
+      if (!this.connection) return 0
+      try {
+        return (await refreshBatteryE87(this.connection, this.log)).level || 0
+      } catch {
+        return 0
+      }
+    })
   }
 
   async sendImage(imageBytes: Uint8Array, onProgress: (pct: number) => void) {
-    if (!this.connection) throw new Error("Not connected");
-    await writeFileE87({
-      conn: this.connection,
-      payload: imageBytes,
-      uploadMode: 'image',
-      deviceLanguage: 'en',
-      interChunkDelayMs: 0,
-      cancelRequested: () => false,
-      onProgress: (bytesSent, totalBytes, chunksSent, totalChunks) => {
-        onProgress((bytesSent / totalBytes) * 100);
-      },
-      log: this.log
-    });
+    return this.exclusive(async () => {
+      if (!this.connection) throw new Error('Not connected')
+      await writeFileE87({
+        conn: this.connection,
+        payload: imageBytes,
+        uploadMode: 'image',
+        deviceLanguage: 'en',
+        interChunkDelayMs: 0,
+        cancelRequested: () => false,
+        onProgress: (bytesSent, totalBytes) => onProgress((bytesSent / totalBytes) * 100),
+        log: this.log,
+      })
+    })
   }
 }

@@ -12,6 +12,7 @@
 
   // Crop parameters
   let scale = 1
+  let fitScale = 1 // scale at which the image exactly covers the circle
   let offsetX = 0
   let offsetY = 0
 
@@ -21,14 +22,15 @@
   let initialPinchDistance = 0
   let initialPinchScale = 1
 
-  const dispatch = createEventDispatcher()
+  const dispatch = createEventDispatcher<{ crop: { finalCanvas: HTMLCanvasElement } }>()
 
   $: if (imageUrl) {
     image.src = imageUrl
     image.onload = () => {
       // Auto-fit initially
       const size = Math.min(image.width, image.height)
-      scale = 368 / size
+      fitScale = 368 / size
+      scale = fitScale
       offsetX = (368 - image.width * scale) / 2
       offsetY = (368 - image.height * scale) / 2
       draw()
@@ -170,9 +172,7 @@
 
     fCtx.drawImage(image, offsetX, offsetY, image.width * scale, image.height * scale)
 
-    // In a real app we'd convert this to JPEG bytes, but here we just pass the canvas/url
-    const dataUrl = finalCanvas.toDataURL('image/jpeg', 0.88)
-    dispatch('crop', { dataUrl, finalCanvas })
+    dispatch('crop', { finalCanvas })
   }
 </script>
 
@@ -184,11 +184,12 @@
     on:pointerdown={handlePointerDown}
     on:pointermove={handlePointerMove}
     on:pointerup={handlePointerUp}
+    on:pointercancel={handlePointerUp}
     on:wheel|preventDefault={handleWheel}
   ></canvas>
   <div class="controls">
     <label for="zoom">Zoom</label>
-    <input id="zoom" type="range" min="0.1" max="5" step="0.05" value={scale} on:input={updateScale} />
+    <input id="zoom" type="range" min={fitScale * 0.5} max={fitScale * 5} step={fitScale * 0.05} value={scale} on:input={updateScale} />
   </div>
   <div class="actions">
     <button on:click={confirmCrop}>Confirmer le recadrage</button>

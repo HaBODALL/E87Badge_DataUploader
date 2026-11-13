@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import 'fake-indexeddb/auto'
 import { transferQueue } from '../queue'
 import { clearQueue, getAllQueueItems } from '../db'
@@ -71,5 +71,32 @@ describe('transferQueue store', () => {
     state = get(transferQueue)
     expect(state.items.length).toBe(1)
     expect(state.items[0].name).toBe('pending-item.jpg')
+  })
+
+  it('uploads pending items once a connected client is available', async () => {
+    const sendImage = vi.fn(async (_data: Uint8Array, onProgress: (pct: number) => void) => onProgress(50))
+    transferQueue.setClient({ connected: true, sendImage } as any)
+    await transferQueue.add(new Uint8Array([1, 2, 3]), 'to-upload.jpg')
+
+    transferQueue.resume()
+    await vi.waitFor(() => expect(get(transferQueue).items[0].status).toBe('done'))
+
+    expect(sendImage).toHaveBeenCalledTimes(1)
+    expect((await getAllQueueItems())[0].status).toBe('done')
+  })
+
+  it('keeps items pending without counting a retry when the badge is disconnected', async () => {
+    const client = { connected: true, sendImage: vi.fn() }
+    client.sendImage.mockImplementation(async () => {
+      client.connected = false
+      throw new Error('GATT disconnected')
+    })
+    transferQueue.setClient(client as any)
+    await transferQueue.add(new Uint8Array([1]), 'interrupted.jpg')
+
+    transferQueue.resume()
+    await vi.waitFor(() => expect(client.sendImage).toHaveBeenCalled())
+    await vi.waitFor(() => expect(get(transferQueue).items[0].status).toBe('pending'))
+    expect(get(transferQueue).items[0].retries).toBe(0)
   })
 })

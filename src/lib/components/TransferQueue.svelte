@@ -1,26 +1,16 @@
 <!-- src/lib/components/TransferQueue.svelte -->
 <script lang="ts">
   import { transferQueue } from '../store/queue'
+  import type { QueueItem } from '../store/db'
 
-  let { items, isProcessing } = $transferQueue
-
-  // Reactively update local vars when store changes
-  $: {
-    items = $transferQueue.items
-    isProcessing = $transferQueue.isProcessing
+  const STATUS_LABELS: Record<QueueItem['status'], string> = {
+    pending: 'En attente',
+    uploading: 'Envoi',
+    done: 'Envoyé',
+    failed: 'Échec',
   }
 
-  function handlePause() {
-    transferQueue.pause()
-  }
-
-  function handleResume() {
-    transferQueue.resume()
-  }
-
-  function handleClearDone() {
-    transferQueue.clearDone()
-  }
+  $: ({ items, isProcessing } = $transferQueue)
 </script>
 
 <div class="queue-panel">
@@ -28,20 +18,25 @@
     <h3>File d'attente ({items.length})</h3>
     <div class="controls">
       {#if isProcessing}
-        <button class="pause" on:click={handlePause}>Pause</button>
+        <button class="pause" on:click={transferQueue.pause}>Pause</button>
       {:else}
-        <button class="resume" on:click={handleResume}>Reprendre</button>
+        <button class="resume" on:click={transferQueue.resume}>Reprendre</button>
       {/if}
-      <button class="clear" on:click={handleClearDone}>Purger</button>
+      <button class="clear" on:click={transferQueue.clearDone}>Retirer les envoyés</button>
     </div>
   </div>
 
   <ul class="item-list">
     {#each items as item (item.id)}
       <li class="item {item.status}">
-        <span class="name">{item.name}</span>
+        <div class="row">
+          <span class="name">{item.name}</span>
+          {#if item.status !== 'uploading'}
+            <button class="remove" aria-label="Retirer {item.name}" on:click={() => transferQueue.remove(item.id)}>✕</button>
+          {/if}
+        </div>
         <span class="status-badge {item.status}">
-          {item.status}
+          {STATUS_LABELS[item.status]}
           {#if item.estimatedTimeSec && (item.status === 'pending' || item.status === 'uploading')}
             (~{item.estimatedTimeSec}s)
           {/if}
@@ -112,6 +107,19 @@
     display: flex;
     flex-direction: column;
     gap: 8px;
+  }
+
+  .row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .remove {
+    background: transparent;
+    color: #908f9f;
+    padding: 2px 8px;
   }
 
   .name {

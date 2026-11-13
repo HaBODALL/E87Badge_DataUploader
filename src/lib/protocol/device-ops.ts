@@ -11,6 +11,7 @@ import {
   getBrightnessE87,
   setBrightnessE87,
   decodePeripherals,
+  type E87Client,
   type E87Connection,
   type E87SmallFileEntry,
   type E87FileBrowseEntry,
@@ -313,24 +314,22 @@ export function createDeviceOps(cb: DeviceOpsCallbacks): DeviceOps {
   }
 }
 
-
-
-import { E87Client } from './e87-protocol';
-
-
+/** Storage gauge computed from the files on the badge; null when it cannot be read. */
 export async function getStorageInfoE87(client: E87Client, log: (msg: string) => void = () => {}) {
-  if (!client || !client.connection) return null;
   try {
-    const files = await browseFilesE87(client.connection, log);
-    const usedBytes = files.reduce((sum, f) => sum + f.sizeBytes, 0);
-    const totalBytes = 900_000;
+    const files = await client.exclusive(async () => {
+      if (!client.connection) throw new Error('Not connected')
+      return browseFilesE87(client.connection, log)
+    })
+    const usedBytes = files.reduce((sum, f) => sum + f.sizeBytes, 0)
+    const totalBytes = 900_000
     return {
       usedBytes,
       freeBytes: totalBytes - usedBytes,
       totalBytes,
-      usagePercent: Math.min((usedBytes / totalBytes) * 100, 100)
-    };
-  } catch(e) {
-    return null;
+      usagePercent: Math.min((usedBytes / totalBytes) * 100, 100),
+    }
+  } catch {
+    return null
   }
 }

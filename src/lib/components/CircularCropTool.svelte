@@ -181,19 +181,19 @@
     bind:this={canvas}
     width="368"
     height="368"
+    aria-label="Aperçu du recadrage : faites glisser pour déplacer l'image"
     on:pointerdown={handlePointerDown}
     on:pointermove={handlePointerMove}
     on:pointerup={handlePointerUp}
     on:pointercancel={handlePointerUp}
     on:wheel|preventDefault={handleWheel}
   ></canvas>
+  <p class="muted hint">Glissez pour déplacer, pincez ou utilisez la molette pour zoomer.</p>
   <div class="controls">
     <label for="zoom">Zoom</label>
     <input id="zoom" type="range" min={fitScale * 0.5} max={fitScale * 5} step={fitScale * 0.05} value={scale} on:input={updateScale} />
   </div>
-  <div class="actions">
-    <button on:click={confirmCrop}>Confirmer le recadrage</button>
-  </div>
+  <button class="btn btn-primary" on:click={confirmCrop}>Ajouter à la file d'attente</button>
 </div>
 
 <style>
@@ -201,49 +201,42 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 1rem;
-    background: #0a0b1e;
-    padding: 1rem;
-    border-radius: 12px;
+    gap: 14px;
+    margin-top: 16px;
   }
 
   canvas {
-    border: 1px solid #1e4d51;
-    border-radius: 12px;
+    max-width: 100%;
+    height: auto;
+    border-radius: 16px;
+    background: #000;
     touch-action: none;
-    cursor: move;
+    cursor: grab;
+  }
+
+  canvas:active {
+    cursor: grabbing;
+  }
+
+  .hint {
+    font-size: 0.82rem;
+    text-align: center;
   }
 
   .controls {
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: 12px;
     width: 100%;
+    font-size: 0.9rem;
   }
 
   .controls input[type="range"] {
     flex: 1;
-    accent-color: #00f2ff;
+    accent-color: var(--accent);
   }
 
-  button {
-    background: #00f2ff;
-    color: #0a0b1e;
-    border: none;
-    padding: 8px 16px;
-    border-radius: 16px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: all 0.2s ease-in-out;
-  }
-
-  button:hover {
-    background: #4dffff;
-    transform: translateY(-1px);
-  }
-
-  button:focus-visible {
-    outline: 2px solid #00f2ff;
-    outline-offset: 2px;
+  .btn {
+    width: 100%;
   }
 </style>

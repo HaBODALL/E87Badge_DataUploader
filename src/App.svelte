@@ -97,42 +97,54 @@
   <TopAppBar {client} connected={isConnected} />
 
   <div class="content">
-    <div class="connection-card">
+    <section class="card connection" class:connected={isConnected}>
       {#if !isConnected}
-        <h2>Connectez votre badge E87</h2>
-        <p>Utilisez Web Bluetooth pour vous connecter.</p>
-        <button class="primary-btn" on:click={connect} disabled={isConnecting}>
-          {isConnecting ? 'Connexion…' : 'Connecter'}
-        </button>
-        {#if connectError}
-          <p class="error" role="alert">Connexion impossible : {connectError}</p>
-        {/if}
-      {:else}
-        <button class="secondary-btn" on:click={disconnect}>Déconnecter</button>
-      {/if}
-    </div>
-
-    <div class="main-grid">
-      <div class="left-col">
-        <div class="upload-card">
-          <h3>Envoyer une image</h3>
-          {#if !selectedImageUrl}
-            <div class="file-drop {isDraggingOver ? 'drag-over' : ''}"
-              role="group"
-              aria-label="Zone de dépôt d'image"
-              on:dragenter={handleDragOver}
-              on:dragover={handleDragOver}
-              on:dragleave={handleDragLeave}
-              on:drop={handleDrop}>
-              <input type="file" accept="image/*" aria-label="Sélectionner une image" on:change={handleFileSelect} />
-              <p>Glissez-déposez ou cliquez pour sélectionner une image</p>
-            </div>
-          {:else}
-            <CircularCropTool imageUrl={selectedImageUrl} on:crop={handleCrop} />
-            <button class="text-btn" on:click={clearSelection}>Annuler</button>
+        <div class="badge-art" aria-hidden="true"><span></span></div>
+        <div class="connection-text">
+          <h2>Connectez votre badge</h2>
+          <p class="muted">Allumez le badge E87 / L8, puis associez-le en Bluetooth.</p>
+          {#if connectError}
+            <p class="error" role="alert">Connexion impossible : {connectError}</p>
           {/if}
         </div>
-      </div>
+        <button class="btn btn-primary" on:click={connect} disabled={isConnecting}>
+          {isConnecting ? 'Connexion…' : 'Connecter'}
+        </button>
+      {:else}
+        <div class="badge-art on" aria-hidden="true"><span></span></div>
+        <div class="connection-text">
+          <h2>{client.connection?.device.name ?? 'Badge'} connecté</h2>
+          <p class="muted">Les images en file d'attente sont envoyées automatiquement.</p>
+        </div>
+        <button class="btn btn-ghost" on:click={disconnect}>Déconnecter</button>
+      {/if}
+    </section>
+
+    <div class="main-grid">
+      <section class="card">
+        <h3 class="card-title">Nouvelle image</h3>
+        {#if !selectedImageUrl}
+          <div class="file-drop" class:drag-over={isDraggingOver}
+            role="group"
+            aria-label="Zone de dépôt d'image"
+            on:dragenter={handleDragOver}
+            on:dragover={handleDragOver}
+            on:dragleave={handleDragLeave}
+            on:drop={handleDrop}>
+            <input type="file" accept="image/*" aria-label="Sélectionner une image" on:change={handleFileSelect} />
+            <div class="drop-circle" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 16V5m0 0-4 4m4-4 4 4" /><path d="M5 16v2a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-2" />
+              </svg>
+            </div>
+            <p><strong>Déposez une image</strong></p>
+            <p class="muted">ou cliquez pour en choisir une</p>
+          </div>
+        {:else}
+          <CircularCropTool imageUrl={selectedImageUrl} on:crop={handleCrop} />
+          <button class="btn btn-ghost cancel" on:click={clearSelection}>Annuler</button>
+        {/if}
+      </section>
 
       <div class="right-col">
         <TransferQueue />
@@ -143,153 +155,141 @@
 </main>
 
 <style>
-  main {
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-  }
-
   .content {
-    padding: 24px;
-    max-width: 1200px;
+    padding: 24px 16px 48px;
+    max-width: 1040px;
     margin: 0 auto;
-    width: 100%;
     box-sizing: border-box;
+    display: grid;
+    gap: 20px;
   }
 
-  .connection-card {
-    background: #131318;
-    padding: 24px;
-    border-radius: 28px;
-    text-align: center;
-    margin-bottom: 24px;
+  .connection {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+    background: linear-gradient(135deg, rgba(0, 242, 255, 0.08), rgba(188, 0, 255, 0.08)), var(--surface);
+  }
+
+  .connection-text {
+    flex: 1 1 220px;
+    display: grid;
+    gap: 4px;
+  }
+
+  .connection h2 {
+    font-size: 1.15rem;
+  }
+
+  .badge-art {
+    width: 56px;
+    height: 56px;
+    flex: none;
+    border-radius: 50%;
+    border: 3px solid var(--surface-2);
+    display: grid;
+    place-items: center;
+    background: #06071a;
+  }
+
+  .badge-art span {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--muted);
+  }
+
+  .badge-art.on {
+    border-color: var(--accent);
+    box-shadow: 0 0 24px rgba(0, 242, 255, 0.35);
+  }
+
+  .badge-art.on span {
+    background: var(--accent);
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    50% { transform: scale(1.5); opacity: 0.6; }
+  }
+
+  .error {
+    color: var(--danger);
+    font-size: 0.9rem;
   }
 
   .main-grid {
     display: grid;
     grid-template-columns: 1fr;
-    gap: 24px;
+    gap: 20px;
+    align-items: start;
   }
 
-  @media (min-width: 768px) {
+  @media (min-width: 820px) {
     .main-grid {
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     }
   }
 
-  .upload-card {
-    background: #131318;
-    padding: 24px;
-    border-radius: 28px;
+  .right-col {
+    display: grid;
+    gap: 20px;
   }
 
   .file-drop {
-    border: 2px dashed #1e4d51;
-    border-radius: 12px;
-    padding: 32px;
-    text-align: center;
     position: relative;
     margin-top: 16px;
-    transition: all 0.2s ease-in-out;
+    padding: 36px 16px;
+    border: 2px dashed rgba(255, 255, 255, 0.14);
+    border-radius: 16px;
+    text-align: center;
+    display: grid;
+    justify-items: center;
+    gap: 6px;
+    transition: border-color 0.2s ease, background 0.2s ease;
   }
 
-  .file-drop:hover, .file-drop:focus-within {
-    border-color: #00f2ff;
+  .drop-circle {
+    width: 96px;
+    height: 96px;
+    margin-bottom: 10px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    color: var(--accent);
+    background: var(--accent-soft);
+    transition: transform 0.2s ease;
+  }
+
+  .file-drop:hover,
+  .file-drop:focus-within,
+  .file-drop.drag-over {
+    border-color: var(--accent);
     background: rgba(0, 242, 255, 0.05);
   }
 
   .file-drop:focus-within {
-    outline: 2px solid #00f2ff;
+    outline: 2px solid var(--accent);
     outline-offset: 2px;
   }
 
-  .file-drop.drag-over {
-    border-color: #00f2ff;
-    background: rgba(0, 242, 255, 0.1);
-    transform: scale(1.02);
+  .file-drop.drag-over .drop-circle,
+  .file-drop:hover .drop-circle {
+    transform: scale(1.08);
   }
 
   .file-drop input {
     position: absolute;
-    top: 0;
-    left: 0;
+    inset: 0;
     width: 100%;
     height: 100%;
     opacity: 0;
     cursor: pointer;
   }
 
-  button {
-    cursor: pointer;
-    font-weight: 600;
-  }
-
-  .primary-btn {
-    background: #00f2ff;
-    color: #0a0b1e;
-    border: none;
-    padding: 12px 24px;
-    border-radius: 16px;
-    font-size: 1rem;
-    transition: all 0.2s ease-in-out;
-  }
-
-  .primary-btn:disabled {
-    opacity: 0.6;
-    cursor: wait;
-  }
-
-  .error {
-    color: #ffb4ab;
-    margin-bottom: 0;
-  }
-
-  .primary-btn:not(:disabled):hover {
-    background: #4dffff;
-    transform: translateY(-1px);
-  }
-
-  .primary-btn:focus-visible {
-    outline: 2px solid #00f2ff;
-    outline-offset: 2px;
-  }
-
-  .secondary-btn {
-    background: #1e4d51;
-    color: #00f2ff;
-    border: none;
-    padding: 12px 24px;
-    border-radius: 16px;
-    font-size: 1rem;
-    transition: all 0.2s ease-in-out;
-  }
-
-  .secondary-btn:hover {
-    background: #256166;
-    transform: translateY(-1px);
-  }
-
-  .secondary-btn:focus-visible {
-    outline: 2px solid #00f2ff;
-    outline-offset: 2px;
-  }
-
-  .text-btn {
-    background: transparent;
-    color: #908f9f;
-    border: none;
-    padding: 8px;
-    margin-top: 8px;
+  .cancel {
     width: 100%;
-    transition: color 0.2s ease-in-out;
-  }
-
-  .text-btn:hover, .text-btn:focus-visible {
-    color: #e4e1e9;
-    outline: none;
-  }
-
-  .text-btn:focus-visible {
-    text-decoration: underline;
+    margin-top: 12px;
   }
 </style>

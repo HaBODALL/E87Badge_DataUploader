@@ -1,9 +1,7 @@
 name: Release Desktop & Mobile Apps (Tauri 2)
 
+# Manual only: this builds on 4 platforms (macOS minutes count 10x).
 on:
-  push:
-    tags:
-      - 'v*'
   workflow_dispatch:
 
 permissions:
@@ -50,6 +48,7 @@ jobs:
       - name: Upload Windows Executable Artifact
         uses: actions/upload-artifact@v4
         with:
+          retention-days: 7
           name: E87Badge_DataUploader-Windows-Exe
           path: |
             src-tauri/target/release/app.exe
@@ -101,6 +100,7 @@ jobs:
       - name: Upload Linux Executable Artifact
         uses: actions/upload-artifact@v4
         with:
+          retention-days: 7
           name: E87Badge_DataUploader-Linux-AppImage
           path: |
             src-tauri/target/release/bundle/appimage/*.AppImage
@@ -150,6 +150,7 @@ jobs:
       - name: Upload macOS Executable Artifact
         uses: actions/upload-artifact@v4
         with:
+          retention-days: 7
           name: E87Badge_DataUploader-macOS-Universal
           path: |
             src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg
@@ -227,5 +228,6 @@ jobs:
       - name: Upload Android APK Artifact
         uses: actions/upload-artifact@v4
         with:
+          retention-days: 7
           name: E87Badge_DataUploader-Android-APK
           path: src-tauri/gen/android/app/build/outputs/apk/universal/debug/*.apk
